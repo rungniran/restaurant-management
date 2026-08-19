@@ -1,0 +1,15 @@
+{
+  "name": "qr-food-order-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --url http://localhost:4000/order/upcBv2WYE71A --mobile",
+    "dev": "electron . --url http://localhost:4000/order/upcBv2WYE71A --mobile",
+    "staff": "electron . --staff",
+    "customer": "electron . --url http://localhost:4000/order/upcBv2WYE71A --mobile"
+  },
+  "devDependencies": {
+    "electron": "^31.7.4"
+  }
+}

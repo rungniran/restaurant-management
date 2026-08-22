@@ -220,11 +220,21 @@ function goStatus() {
   border-color: var(--ink);
 }
 .search-wrap {
+  position: relative;
   padding: 14px 18px 6px;
+}
+.search-icon {
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-45%);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
 }
 .search-input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 36px;
   border: 1.5px solid var(--line);
   background: var(--paper);
   border-radius: 10px;

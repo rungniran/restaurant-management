@@ -102,14 +102,14 @@ app.get(/^\/staff(\/.*)?$/, (req, res, next) => {
 });
 
 app.use(express.static(path.join(publicDir, "customer")));
-app.get(/^\/order(\/.*)?$/, (req, res, next) => {
+app.get(/^\/(order|receipt)(\/.*)?$/, (req, res, next) => {
   const indexPath = path.join(publicDir, "customer/index.html");
   res.sendFile(indexPath, (err) => {
     if (err) res.status(404).send("Frontend not built yet — run `npm run build:frontend` in backend/.");
   });
 });
 
-app.get(/^\/(?!api|staff|order).*/, (req, res, next) => {
+app.get(/^\/(?!api|staff|order|receipt).*/, (req, res, next) => {
   const indexPath = path.join(publicDir, "staff/index.html");
   res.sendFile(indexPath, (err) => {
     if (err) res.status(404).send("Frontend not built yet — run `npm run build:frontend` in backend/.");

@@ -391,7 +391,11 @@ textarea {
   padding: 40px 0;
   text-align: center;
 }
-
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 @media (max-width: 900px) {
   .wizard-wrap {
     grid-template-columns: 1fr;

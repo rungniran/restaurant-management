@@ -204,16 +204,20 @@ function goStatus() {
   letter-spacing: 0.5px;
 }
 .table-num {
-  color: var(--cream);
+  color: var(--ink);
   font-size: 22px;
 }
 .call-btn {
-  background: var(--marigold);
-  color: var(--forest-deep);
+  background: var(--paper);
+  color: var(--ink);
   font-weight: 600;
   padding: 8px 14px;
   font-size: 13px;
   border-radius: 999px;
+  border: 1.5px solid var(--line);
+}
+.call-btn:hover {
+  border-color: var(--ink);
 }
 .search-wrap {
   padding: 14px 18px 6px;
@@ -222,29 +226,33 @@ function goStatus() {
   width: 100%;
   padding: 10px 14px;
   border: 1.5px solid var(--line);
+  background: var(--paper);
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
 }
 .cat-tabs {
   display: flex;
-  gap: 8px;
+  gap: 20px;
   overflow-x: auto;
-  padding: 8px 18px 12px;
+  padding: 10px 18px 0;
+  border-bottom: 1px solid var(--line);
 }
 .cat-tab {
-  background: var(--cream);
-  color: var(--forest);
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 13px;
+  background: none;
+  color: var(--muted);
+  padding: 0 0 10px;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .cat-tab.active {
-  background: var(--forest);
-  color: var(--cream);
+  background: none;
+  color: var(--ink);
+  border-bottom: 2px solid var(--ink);
 }
 .menu-body {
   padding: 0 18px 20px;
@@ -254,7 +262,8 @@ function goStatus() {
   scroll-margin-top: 190px;
 }
 .cat-title {
-  font-size: 17px;
+  font-size: 16px;
+  font-weight: 700;
   margin-bottom: 10px;
 }
 .items-grid {
@@ -267,25 +276,28 @@ function goStatus() {
   gap: 12px;
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   padding: 10px;
   text-align: left;
   align-items: flex-start;
+  box-shadow: none;
 }
 .item-card.disabled {
   opacity: 0.5;
 }
 .item-img {
-  width: 68px;
-  height: 68px;
-  border-radius: 10px;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--cream);
+  border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
+  font-size: 22px;
+  color: var(--muted);
 }
 .item-img img {
   width: 100%;
@@ -295,10 +307,11 @@ function goStatus() {
 .item-name {
   font-weight: 600;
   font-size: 14.5px;
+  color: var(--ink);
 }
 .item-desc {
   font-size: 12.5px;
-  color: #6b7268;
+  color: var(--muted);
   margin: 2px 0 6px;
 }
 .item-price-row {
@@ -308,35 +321,36 @@ function goStatus() {
   gap: 8px;
 }
 .item-price {
-  color: var(--marigold-deep);
+  color: var(--ink);
   font-weight: 700;
   font-size: 14px;
 }
 .quick-add {
-  background: var(--forest);
-  color: var(--cream);
-  font-weight: 700;
+  background: none;
+  color: var(--ink);
+  font-weight: 600;
   font-size: 12px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: 999px;
+  border: 1.5px solid var(--ink);
 }
 .quick-stepper {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--forest);
+  background: var(--ink);
   border-radius: 999px;
   padding: 4px 10px;
 }
 .quick-stepper button {
   background: none;
-  color: var(--cream);
+  color: #fff;
   font-size: 15px;
   width: 18px;
   line-height: 1;
 }
 .quick-stepper .qty-num {
-  color: var(--cream);
+  color: #fff;
   font-weight: 700;
   font-size: 13px;
   min-width: 12px;

@@ -358,7 +358,7 @@ function goStatus() {
   font-size: 17px;
 }
 .bill-body {
-  padding: 16px 18px 40px;
+  padding: 18px 18px 48px;
 }
 .loading-state {
   padding: 60px 20px;
@@ -380,31 +380,31 @@ function goStatus() {
   font-size: 14px;
 }
 .total-preview strong {
-  font-family: "Chonburi", serif;
-  font-size: 20px;
+  font-family: inherit;
+  font-size: 22px;
   color: var(--marigold-deep);
 }
 .total-preview small, .picked-total small { display: block; color: #6b7268; font-weight: 400; font-size: 11px; margin-top: 3px; }
 .mode-tabs {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin-bottom: 14px;
 }
 .mode-tab {
-  flex: 1;
-  background: var(--cream);
-  color: var(--forest);
-  padding: 10px 6px;
+  background: #f4f1ec;
+  color: var(--ink);
+  padding: 10px;
   border-radius: 10px;
   font-size: 12.5px;
   font-weight: 700;
 }
 .mode-tab.active {
   background: var(--forest);
-  color: var(--cream);
+  color: #fff;
 }
 .mode-panel {
-  padding: 18px;
+  padding: 20px;
 }
 .mode-desc {
   font-size: 12.5px;
@@ -432,6 +432,8 @@ function goStatus() {
   height: 32px;
   border-radius: 50%;
   font-size: 18px;
+  min-height: 44px;
+  width: 44px;
 }
 .per-person {
   text-align: center;
@@ -494,8 +496,9 @@ function goStatus() {
   font-size: 13px;
 }
 .amount-big {
-  font-family: "Chonburi", serif;
-  font-size: 22px;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 800;
   color: var(--marigold-deep);
   margin-bottom: 10px;
 }

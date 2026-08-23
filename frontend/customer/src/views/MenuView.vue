@@ -218,18 +218,18 @@ function goStatus() {
   margin-top: 2px;
 }
 .call-btn {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--marigold-light);
+  color: var(--marigold-deep);
   font-weight: 600;
   padding: 8px 14px;
   font-size: 13px;
   border-radius: 999px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid #efc0aa;
   transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
 .call-btn:hover {
-  border-color: var(--ink);
-  background: var(--cream);
+  border-color: var(--marigold);
+  background: #f9d8c6;
 }
 .search-wrap {
   position: relative;
@@ -264,20 +264,18 @@ function goStatus() {
   background: var(--paper);
 }
 .cat-tabs {
-  position: sticky;
-  top: 74px;
-  z-index: 15;
+  position: static;
   background: var(--paper);
   display: flex;
-  gap: 22px;
+  gap: 18px;
   overflow-x: auto;
-  padding: 0 18px;
+  padding: 0 18px 2px;
   border-bottom: 1px solid var(--line);
 }
 .cat-tab {
   background: none;
   color: var(--muted);
-  padding: 0 0 12px;
+  padding: 10px 0 11px;
   border-radius: 0;
   border-bottom: 2px solid transparent;
   font-size: 14px;
@@ -289,14 +287,14 @@ function goStatus() {
 .cat-tab.active {
   background: none;
   color: var(--ink);
-  border-bottom: 2px solid var(--ink);
+  border-bottom: 3px solid var(--marigold);
 }
 .menu-body {
-  padding: 4px 18px 24px;
+  padding: 8px 18px 28px;
 }
 .cat-section {
-  margin-top: 24px;
-  scroll-margin-top: 130px;
+  margin-top: 28px;
+  scroll-margin-top: 78px;
 }
 .cat-title {
   font-size: 16px;
@@ -307,7 +305,7 @@ function goStatus() {
 .items-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .item-card {
   display: flex;
@@ -315,7 +313,7 @@ function goStatus() {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 12px;
+  padding: 14px;
   text-align: left;
   align-items: flex-start;
   box-shadow: none;
@@ -329,8 +327,8 @@ function goStatus() {
   opacity: 0.5;
 }
 .item-img {
-  width: 62px;
-  height: 62px;
+  width: 72px;
+  height: 72px;
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
@@ -353,16 +351,17 @@ function goStatus() {
 }
 .item-name {
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--ink);
 }
 .item-desc {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
   margin: 2px 0 8px;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .item-price-row {
   display: flex;
@@ -376,32 +375,33 @@ function goStatus() {
   font-size: 14px;
 }
 .quick-add {
-  background: none;
-  color: var(--ink);
+  background: var(--marigold-light);
+  color: var(--marigold-deep);
   font-weight: 600;
   font-size: 12px;
-  padding: 5px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid #efc0aa;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 .quick-add:active {
-  background: var(--ink);
+  background: var(--marigold);
   color: #fff;
 }
 .quick-stepper {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--ink);
+  background: var(--forest);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 4px 8px;
 }
 .quick-stepper button {
   background: none;
   color: #fff;
   font-size: 15px;
-  width: 18px;
+  min-height: 36px;
+  width: 36px;
   line-height: 1;
 }
 .quick-stepper .qty-num {

@@ -1,19 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap");
 
 :root {
-  --ink: #171717;
-  --forest: #111111;
-  --forest-deep: #000000;
-  --forest-light: #3a3a3a;
-  --marigold: #111111;
-  --marigold-light: #3a3a3a;
-  --marigold-deep: #000000;
-  --chili: #b3261e;
-  --cream: #f7f6f4;
+  --ink: #202124;
+  --forest: #165f57;
+  --forest-deep: #104b45;
+  --forest-light: #26776d;
+  --marigold: #c4511c;
+  --marigold-light: #fbe7dc;
+  --marigold-deep: #963b13;
+  --chili: #b42318;
+  --cream: #faf8f5;
   --paper: #ffffff;
   --line: #e6e4e0;
   --success: #2f6f4f;
-  --muted: #8a8a86;
+  --muted: #5f625f;
 
   --radius-sm: 8px;
   --radius: 12px;
@@ -81,6 +81,7 @@ button {
   border: none;
   border-radius: var(--radius);
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), background 0.15s var(--ease), opacity 0.15s var(--ease);
+  min-height: 44px;
 }
 
 button:focus-visible,
@@ -92,7 +93,7 @@ input:focus-visible {
 
 
 .btn-primary {
-  background: var(--ink);
+  background: var(--marigold);
   color: #fff;
   font-weight: 600;
   padding: 15px 20px;
@@ -100,7 +101,7 @@ input:focus-visible {
   box-shadow: none;
 }
 .btn-primary:hover {
-  background: #000;
+  background: var(--marigold-deep);
 }
 .btn-primary:active {
   transform: scale(0.98);
@@ -127,13 +128,13 @@ input:focus-visible {
 }
 
 .btn-accent {
-  background: var(--ink);
+  background: var(--marigold);
   color: #fff;
   font-weight: 700;
   box-shadow: none;
 }
 .btn-accent:hover {
-  background: #000;
+  background: var(--marigold-deep);
 }
 
 .chip {
@@ -142,15 +143,15 @@ input:focus-visible {
   gap: 4px;
   padding: 5px 12px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
-.chip-pending { background: #fdecc8; color: #96650b; }
-.chip-accepted { background: #dfeaf4; color: #2b5f8a; }
-.chip-cooking { background: #fde3d3; color: var(--chili); }
-.chip-done, .chip-served { background: #dcefe0; color: var(--success); }
-.chip-cancelled { background: #f0d9d9; color: #8a2b2b; }
+.chip-pending { background: #fff0cf; color: #815900; }
+.chip-accepted { background: #dceeff; color: #185c93; }
+.chip-cooking { background: #ffe2d5; color: #982b12; }
+.chip-done, .chip-served { background: #d9f1e1; color: #18633b; }
+.chip-cancelled { background: #fbe0df; color: #8c201a; }
 
 .card {
   background: var(--paper);
@@ -165,8 +166,8 @@ input:focus-visible {
   z-index: 10;
   background: var(--paper);
   color: var(--ink);
-  padding: 16px 18px;
-  padding-top: max(16px, env(safe-area-inset-top));
+  padding: 12px 18px;
+  padding-top: max(12px, env(safe-area-inset-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -178,8 +179,8 @@ input:focus-visible {
   bottom: 0;
   background: var(--paper);
   border-top: 1px solid var(--line);
-  padding: 14px 16px;
-  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
   display: flex;
   gap: 10px;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
@@ -285,4 +286,3 @@ input:focus-visible {
     margin: 12mm;
   }
 }
-

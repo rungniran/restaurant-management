@@ -71,7 +71,8 @@
         <p class="r-footer">ขอบคุณที่ใช้บริการ <i class="fa-solid fa-hands-praying"></i></p>
       </div>
 
-      <button class="btn-primary print-btn no-print" @click="printReceipt"><i class="fa-solid fa-print"></i> พิมพ์ใบเสร็จ</button>
+      <p v-if="receipt.status !== 'paid'" class="pending-note no-print">รายการนี้ยังรอการชำระเงิน จึงยังพิมพ์ใบเสร็จไม่ได้</p>
+      <button v-else class="btn-primary print-btn no-print" @click="printReceipt"><i class="fa-solid fa-print"></i> พิมพ์ใบเสร็จ</button>
     </main>
   </template>
 </template>
@@ -138,7 +139,7 @@ function goBack() {
   color: var(--chili);
 }
 .receipt-wrap {
-  padding: 20px 18px 40px;
+  padding: 24px 18px 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -229,6 +230,7 @@ function goBack() {
   width: 100%;
   max-width: 340px;
 }
+.pending-note { max-width: 340px; color: #815900; background: #fff0cf; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
 
 @media print {
   .no-print {

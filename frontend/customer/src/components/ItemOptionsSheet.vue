@@ -50,6 +50,7 @@
         </div>
       </div>
 
+      <p v-if="!canAdd" class="required-hint">กรุณาเลือกตัวเลือกที่มีเครื่องหมาย * ให้ครบ</p>
       <button class="btn-primary add-btn" :disabled="!canAdd" @click="confirmAdd">
         เพิ่มลงตะกร้า · ฿{{ totalPrice }}
       </button>
@@ -129,7 +130,7 @@ function confirmAdd() {
   max-width: 480px;
   margin: 0 auto;
   border-radius: 20px 20px 0 0;
-  padding: 10px 20px 24px;
+  padding: 10px 20px max(24px, env(safe-area-inset-bottom));
   max-height: 85vh;
   overflow-y: auto;
 }
@@ -186,7 +187,7 @@ function confirmAdd() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px;
   border: 1.5px solid var(--line);
   border-radius: 10px;
   font-size: 14px;
@@ -226,11 +227,13 @@ textarea {
 .qty-control button {
   background: none;
   font-size: 18px;
-  width: 24px;
+  width: 40px;
+  min-height: 40px;
   color: var(--forest);
 }
 .add-btn {
   width: 100%;
   margin-top: 20px;
 }
+.required-hint { color: var(--chili); font-size: 12px; margin: 16px 0 -8px; }
 </style>

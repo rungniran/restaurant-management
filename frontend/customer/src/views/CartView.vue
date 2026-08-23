@@ -84,7 +84,7 @@ async function submit() {
   font-size: 17px;
 }
 .cart-body {
-  padding: 16px 18px 100px;
+  padding: 18px 18px 112px;
 }
 .empty-state {
   text-align: center;
@@ -99,12 +99,12 @@ async function submit() {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
 }
 .line-name {
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 15px;
 }
 .line-opts,
 .line-note {
@@ -129,7 +129,9 @@ async function submit() {
 }
 .qty-control button {
   background: none;
-  font-size: 15px;
+  font-size: 18px;
+  min-height: 36px;
+  min-width: 36px;
   color: var(--forest);
 }
 .line-price {

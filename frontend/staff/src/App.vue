@@ -42,7 +42,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
-const isLoginPage = computed(() => ["landing", "login", "signup"].includes(route.name));
+const isLoginPage = computed(() => ["landing", "login", "signup", "change-password"].includes(route.name));
 
 const ALL_NAV = [
   { name: "setup", to: "/setup", icon: "fa-rocket", label: "Setup Wizard", roles: ["owner", "manager"] },
@@ -52,6 +52,7 @@ const ALL_NAV = [
   { name: "reservations", to: "/reservations", icon: "fa-calendar-days", label: "การจอง", roles: ["owner", "manager", "waiter"] },
   { name: "menu", to: "/menu", icon: "fa-book-open", label: "เมนูอาหาร", roles: ["owner", "manager"] },
   { name: "payments", to: "/payments", icon: "fa-receipt", label: "ประวัติการชำระเงิน", roles: ["owner", "manager", "cashier"] },
+  { name: "staffAccounts", to: "/staff-accounts", icon: "fa-user-group", label: "จัดการพนักงาน", roles: ["owner", "manager"] },
 ];
 
 const visibleNav = computed(() => ALL_NAV.filter((item) => item.roles.includes(auth.staff?.role)));

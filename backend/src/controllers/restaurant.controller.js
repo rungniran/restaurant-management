@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import Restaurant from "../models/Restaurant.js";
 import Staff from "../models/Staff.js";
 import Category from "../models/Category.js";
@@ -11,6 +12,14 @@ function slugify(value) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "restaurant";
+}
+
+// Generates a random, human-typeable temporary password (e.g. "kx7m-p2qw").
+// This replaces the old hardcoded "owner123" default, which was identical
+// for every new restaurant and never had to be changed — an easy target for
+// credential stuffing once one restaurant's username pattern was known.
+function generateTempPassword() {
+  return crypto.randomBytes(4).toString("hex").match(/.{1,4}/g).join("-");
 }
 
 // POST /api/restaurant  (public) - create a new restaurant with owner account
@@ -37,14 +46,15 @@ export async function createRestaurant(req, res) {
     counter += 1;
   }
 
-  const defaultPassword = "owner123";
-  const passwordHash = await bcrypt.hash(defaultPassword, 10);
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
   const owner = await Staff.create({
     restaurantId: restaurant._id,
     name: displayName,
     username,
     passwordHash,
     role: "owner",
+    mustChangePassword: true,
   });
 
   res.status(201).json({
@@ -52,7 +62,7 @@ export async function createRestaurant(req, res) {
     owner: {
       id: owner._id,
       username,
-      password: defaultPassword,
+      password: tempPassword,
       role: owner.role,
     },
   });

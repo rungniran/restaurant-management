@@ -1,13 +1,28 @@
 import jwt from "jsonwebtoken";
+import Staff from "../models/Staff.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: "Missing token" });
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.staff = payload; // { id, restaurantId, role }
+
+    // Re-check the DB on every request so that deactivating a staff member
+    // or changing their role takes effect immediately, instead of waiting
+    // up to 12h for their existing token to expire.
+    const staff = await Staff.findById(payload.id).select("role isActive restaurantId");
+    if (!staff || !staff.isActive) {
+      return res.status(401).json({ error: "Account is inactive or no longer exists" });
+    }
+
+    req.staff = {
+      id: payload.id,
+      restaurantId: String(staff.restaurantId),
+      role: staff.role, // always the live role, not the one baked into the token
+      name: payload.name,
+    };
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });

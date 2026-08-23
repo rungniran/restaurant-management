@@ -118,7 +118,7 @@ const setupHrefMap = {
   restaurant: "/setup",
   tables: "/tables",
   qr: "/tables",
-  staff: "/dashboard",
+  staff: "/staff-accounts",
   category: "/menu",
   menu: "/menu",
 };
@@ -193,6 +193,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .eyebrow {
@@ -391,11 +397,7 @@ textarea {
   padding: 40px 0;
   text-align: center;
 }
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+
 @media (max-width: 900px) {
   .wizard-wrap {
     grid-template-columns: 1fr;

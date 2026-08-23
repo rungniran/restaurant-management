@@ -47,11 +47,33 @@ export async function createOrder(req, res) {
       return res.status(400).json({ error: `เมนู "${reqItem.name || reqItem.menuItemId}" ไม่พร้อมขาย` });
     }
     const qty = Math.max(1, Number(reqItem.quantity) || 1);
-    const selectedOptions = (reqItem.selectedOptions || []).map((o) => ({
-      groupName: o.groupName,
-      choice: o.choice,
-      extraPrice: Number(o.extraPrice) || 0,
-    }));
+
+    // SECURITY: never trust extraPrice sent by the client — look up the real
+    // price of each selected option from the menu item's own option groups.
+    // Without this, a customer could tamper with the request body and pay
+    // less than the real price (or even negative amounts).
+    const requestedOptions = reqItem.selectedOptions || [];
+    const selectedOptions = [];
+    for (const opt of requestedOptions) {
+      const group = menuItem.options.find((g) => g.name === opt.groupName);
+      const choice = group?.choices.find((c) => c.label === opt.choice);
+      if (!group || !choice) {
+        return res.status(400).json({ error: `ตัวเลือก "${opt.choice}" ไม่ถูกต้องสำหรับเมนูนี้` });
+      }
+      selectedOptions.push({
+        groupName: group.name,
+        choice: choice.label,
+        extraPrice: choice.extraPrice, // trusted server-side value, not client input
+      });
+    }
+
+    // enforce required option groups are present
+    for (const group of menuItem.options) {
+      if (group.required && !selectedOptions.some((o) => o.groupName === group.name)) {
+        return res.status(400).json({ error: `กรุณาเลือก "${group.name}" สำหรับเมนู "${menuItem.name}"` });
+      }
+    }
+
     const extra = selectedOptions.reduce((sum, o) => sum + o.extraPrice, 0);
     const lineTotal = (menuItem.price + extra) * qty;
     subtotal += lineTotal;

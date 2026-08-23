@@ -136,7 +136,7 @@
 <script setup>
 import { reactive, ref, onMounted } from "vue";
 import { useMenuStore } from "../stores/menu";
-import axios from "axios";
+import api from "../api/client";
 
 const menu = useMenuStore();
 
@@ -182,15 +182,9 @@ async function handleImageUpload(event) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await axios.post(
-      import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/upload` : "http://localhost:4000/api/upload",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
+    const response = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
     if (response.data.url) {
       form.imageUrl = response.data.url;

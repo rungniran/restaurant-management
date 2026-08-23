@@ -221,7 +221,6 @@ function goStatus() {
 .search-wrap {
   position: relative;
   padding: 16px 18px 14px;
-  
 }
 .search-icon {
   position: absolute;
@@ -261,7 +260,6 @@ function goStatus() {
   overflow-x: auto;
   padding: 0 18px;
   border-bottom: 1px solid var(--line);
-      padding-top: 15px;
 }
 .cat-tab {
   background: none;

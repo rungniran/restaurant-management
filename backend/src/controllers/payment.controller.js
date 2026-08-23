@@ -236,8 +236,17 @@ export async function confirmPayment(req, res) {
   res.json(payment);
 }
 
-// POST /api/payment/webhook  (payment gateway callback - verify signature per provider in production)
+// POST /api/payment/webhook  (payment gateway callback)
+// Locked behind a shared secret header until a real PromptPay/gateway
+// integration exists. Without this, anyone could POST a paymentId (payment
+// IDs are already public via the receipt URL) with status:"success" and mark
+// their own bill as paid without actually transferring money.
 export async function paymentWebhook(req, res) {
+  const expectedSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+  if (!expectedSecret || req.headers["x-webhook-secret"] !== expectedSecret) {
+    return res.status(401).json({ error: "Unauthorized webhook call" });
+  }
+
   const { paymentId, status } = req.body; // shape depends on real gateway
   const payment = await Payment.findById(paymentId);
   if (!payment) return res.status(404).json({ error: "Payment not found" });

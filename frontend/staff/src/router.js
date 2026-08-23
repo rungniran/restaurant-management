@@ -10,11 +10,14 @@ import MenuManageView from "./views/MenuManageView.vue";
 import BoardView from "./views/BoardView.vue";
 import DashboardView from "./views/DashboardView.vue";
 import SetupWizardView from "./views/SetupWizardView.vue";
+import ChangePasswordView from "./views/ChangePasswordView.vue";
+import StaffManageView from "./views/StaffManageView.vue";
 
 const routes = [
   { path: "/", name: "landing", component: LandingView },
   { path: "/login", name: "login", component: LoginView },
   { path: "/signup", name: "signup", component: SignUpView },
+  { path: "/change-password", name: "change-password", component: ChangePasswordView },
   { path: "/setup", name: "setup", component: SetupWizardView },
   { path: "/dashboard", name: "dashboard", component: DashboardView },
   { path: "/tables", name: "tables", component: TablesView },
@@ -22,6 +25,7 @@ const routes = [
   { path: "/payments", name: "payments", component: PaymentHistoryView },
   { path: "/menu", name: "menu", component: MenuManageView },
   { path: "/kitchen", name: "kitchen", component: BoardView },
+  { path: "/staff-accounts", name: "staffAccounts", component: StaffManageView },
 ];
 
 const router = createRouter({
@@ -36,6 +40,14 @@ router.beforeEach((to) => {
 
   if (!auth.isLoggedIn && !publicRoutes.includes(to.name)) {
     return { name: "landing" };
+  }
+
+  if (auth.isLoggedIn && auth.mustChangePassword && to.name !== "change-password") {
+    return { name: "change-password" };
+  }
+
+  if (auth.isLoggedIn && !auth.mustChangePassword && to.name === "change-password") {
+    return { name: isOwnerFlow ? "setup" : "tables" };
   }
 
   if (auth.isLoggedIn && publicRoutes.includes(to.name)) {

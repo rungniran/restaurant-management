@@ -13,6 +13,7 @@ const staffSchema = new mongoose.Schema(
       default: "waiter",
     },
     isActive: { type: Boolean, default: true },
+    mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

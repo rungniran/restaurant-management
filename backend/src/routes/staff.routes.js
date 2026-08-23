@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import {
   login,
   loginGoogle,
+  changePassword,
   me,
   listStaff,
   createStaff,
@@ -15,6 +16,7 @@ const router = Router();
 router.post("/login", login);
 router.post("/login-google", loginGoogle);
 router.get("/me", requireAuth, me);
+router.post("/change-password", requireAuth, changePassword);
 
 router.get("/", requireAuth, requireRole("owner", "manager"), listStaff);
 router.post("/", requireAuth, requireRole("owner", "manager"), createStaff);

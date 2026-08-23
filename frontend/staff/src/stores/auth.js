@@ -10,6 +10,7 @@ export const useAuthStore = defineStore("auth", {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
+    mustChangePassword: (state) => !!state.staff?.mustChangePassword,
   },
 
   actions: {
@@ -24,6 +25,19 @@ export const useAuthStore = defineStore("auth", {
         return true;
       } catch (err) {
         this.error = err.response?.data?.error || "เข้าสู่ระบบไม่สำเร็จ";
+        return false;
+      }
+    },
+
+    async changePassword(currentPassword, newPassword) {
+      this.error = null;
+      try {
+        await api.post("/staff/change-password", { currentPassword, newPassword });
+        this.staff = { ...this.staff, mustChangePassword: false };
+        localStorage.setItem("staff_info", JSON.stringify(this.staff));
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || "เปลี่ยนรหัสผ่านไม่สำเร็จ";
         return false;
       }
     },

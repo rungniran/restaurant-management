@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import Table from "../models/Table.js";
 import Order from "../models/Order.js";
+import Payment from "../models/Payment.js";
 import { emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff, sessionScopedTableFilter } from "../utils/session.js";
 
@@ -49,11 +50,33 @@ export async function getBillSummary(req, res) {
   }));
 
   const restaurantInfo = await (await import("../models/Restaurant.js")).default.findById(table.restaurantId);
+  const subtotal = orders.reduce((s, o) => s + o.subtotal, 0);
+  const serviceCharge = +(subtotal * ((restaurantInfo?.serviceChargePercent || 0) / 100)).toFixed(2);
+  const vat = +((subtotal + serviceCharge) * ((restaurantInfo?.vatPercent || 0) / 100)).toFixed(2);
+  const sessionPayments = await Payment.find({
+    tableIds: { $in: groupTables.map((groupTable) => groupTable._id) },
+    status: { $in: ["pending", "paid"] },
+    createdAt: { $gte: sessionCutoff(table) },
+    splitType: "items",
+  }).select("itemRefs status");
+  const itemPaymentState = {};
+  for (const payment of sessionPayments) {
+    for (const ref of payment.itemRefs || []) {
+      const key = `${ref.orderId}:${ref.itemId}`;
+      itemPaymentState[key] = payment.status;
+    }
+  }
 
   res.json({
     tableIds: groupTables.map((t) => t._id),
     orders,
-    subtotal: orders.reduce((s, o) => s + o.subtotal, 0),
+    subtotal,
+    serviceCharge,
+    vat,
+    total: +(subtotal + serviceCharge + vat).toFixed(2),
+    serviceChargePercent: Number(restaurantInfo?.serviceChargePercent || 0),
+    vatPercent: Number(restaurantInfo?.vatPercent || 0),
+    itemPaymentState,
     perTable,
     buffetEnabled: restaurantInfo?.pricingMode === "buffet" && Number(restaurantInfo?.buffetPricePerPerson) > 0,
     buffetPricePerPerson: Number(restaurantInfo?.buffetPricePerPerson || 0),
@@ -79,6 +102,13 @@ export async function updateTableStatus(req, res) {
   const { status } = req.body;
   const existing = await Table.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
   if (!existing) return res.status(404).json({ error: "Table not found" });
+
+  // Payment states must be driven by the payment flow; setting them manually
+  // makes the floor view disagree with the actual outstanding bill.
+  const allowedStatuses = ["available", "occupied", "ordering", "cleaning"];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ error: "สถานะนี้ต้องเปลี่ยนผ่านขั้นตอนชำระเงิน" });
+  }
 
   // A new party is being seated at a table that was previously available/cleaning
   // -> start a fresh session so old orders from the last customer never resurface.
@@ -208,4 +238,3 @@ export async function deleteTable(req, res) {
   await Table.deleteOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
   res.json({ success: true });
 }
-

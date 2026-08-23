@@ -84,7 +84,7 @@ export const useTablesStore = defineStore("tables", {
         if (idx !== -1) this.tables[idx] = data;
         return { ok: true };
       } catch (err) {
-        return { ok: false, error: err.response?.data?.error || "ปล่อยโต๊ะไม่สำเร็จ" };
+        return { ok: false, status: err.response?.status, error: err.response?.data?.error || "ปล่อยโต๊ะไม่สำเร็จ" };
       }
     },
 

@@ -44,6 +44,7 @@
         <div class="s-value accent">฿{{ payments.totalPaid.toLocaleString() }}</div>
       </div>
     </div>
+    <p v-if="payments.error" class="error-text">{{ payments.error }}</p>
 
     <div v-if="payments.loading" class="empty">กำลังโหลด...</div>
     <div v-else-if="payments.payments.length === 0" class="empty">ไม่พบรายการชำระเงิน</div>
@@ -71,8 +72,8 @@
           <td><span class="chip" :class="`chip-${p.status}`">{{ statusLabel(p.status) }}</span></td>
           <td class="mono small-text">{{ formatDate(p.createdAt) }}</td>
           <td class="row-actions">
-            <button v-if="p.status === 'pending'" class="btn small" @click="payments.confirmPayment(p._id)">
-              ยืนยันจ่ายแล้ว
+            <button v-if="p.status === 'pending'" class="btn small" :disabled="payments.confirmingId === p._id" @click="confirmPayment(p)">
+              {{ payments.confirmingId === p._id ? "กำลังยืนยัน..." : "ยืนยันจ่ายแล้ว" }}
             </button>
             <a class="btn small" :href="`/receipt/${p._id}`" target="_blank" rel="noopener"><i class="fa-solid fa-receipt"></i> ใบเสร็จ</a>
           </td>
@@ -106,6 +107,10 @@ function splitLabel(p) {
 }
 function formatDate(d) {
   return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
+}
+async function confirmPayment(payment) {
+  if (!confirm(`ยืนยันว่าได้รับชำระเงิน ${payment.amount.toLocaleString()} บาท สำหรับ ${payment.receiptNumber || "รายการนี้"} แล้ว?`)) return;
+  await payments.confirmPayment(payment._id);
 }
 </script>
 
@@ -167,6 +172,12 @@ h2 {
 .empty {
   color: var(--muted);
   padding: 40px 0;
+}
+.error-text { color: var(--danger); margin: 0 0 14px; font-size: 13px; }
+.pay-table { display: table; }
+@media (max-width: 800px) {
+  .pay-table { min-width: 780px; }
+  .page { overflow-x: auto; }
 }
 .pay-table {
   width: 100%;

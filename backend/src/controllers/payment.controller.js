@@ -19,6 +19,62 @@ async function resolveGroupTables(table) {
   return Table.find({ groupId: table.groupId });
 }
 
+function itemKey(orderId, itemId) {
+  return `${orderId}:${itemId}`;
+}
+
+async function findSessionPayments(table, groupTables, statuses = ["pending", "paid"]) {
+  return Payment.find({
+    restaurantId: table.restaurantId,
+    tableIds: { $in: groupTables.map((groupTable) => groupTable._id) },
+    status: { $in: statuses },
+    createdAt: { $gte: sessionCutoff(table) },
+  });
+}
+
+// Full/equal/buffet payments settle the whole bill and therefore may not be
+// mixed with another checkout. Item payments are different: only overlapping
+// items are blocked, allowing friends to pay their own selections separately.
+async function ensureCheckoutAvailable(table, groupTables, splitType, itemRefs = []) {
+  const sessionPayments = await findSessionPayments(table, groupTables);
+
+  if (splitType !== "items") {
+    if (sessionPayments.length > 0) {
+      const error = new Error("บิลนี้มีรายการชำระเงินอยู่แล้ว");
+      error.statusCode = 409;
+      error.paymentId = sessionPayments[0]._id;
+      throw error;
+    }
+    return;
+  }
+
+  if (sessionPayments.some((payment) => payment.splitType !== "items")) {
+    const error = new Error("บิลนี้กำลังหรือเคยชำระแบบเต็มบิลแล้ว");
+    error.statusCode = 409;
+    error.paymentId = sessionPayments[0]._id;
+    throw error;
+  }
+
+  const usedItemKeys = new Set(
+    sessionPayments
+      .filter((payment) => payment.splitType === "items")
+      .flatMap((payment) => payment.itemRefs || [])
+      .map((ref) => itemKey(ref.orderId, ref.itemId))
+  );
+  const duplicate = itemRefs.some((ref) => usedItemKeys.has(itemKey(ref.orderId, ref.itemId)));
+  if (duplicate) {
+    const error = new Error("มีรายการอาหารที่เลือกอยู่ในบิลที่ชำระหรือรอชำระแล้ว");
+    error.statusCode = 409;
+    throw error;
+  }
+
+}
+
+function sendPaymentConflict(res, error) {
+  if (error.statusCode !== 409) throw error;
+  return res.status(409).json({ error: error.message, paymentId: error.paymentId });
+}
+
 async function computeAmount({ orders, restaurant, itemRefs }) {
   let subtotal;
   if (itemRefs && itemRefs.length > 0) {
@@ -36,6 +92,45 @@ async function computeAmount({ orders, restaurant, itemRefs }) {
   const vat = +((subtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
   const amount = +(subtotal + serviceCharge + vat).toFixed(2);
   return { subtotal, serviceCharge, vat, amount };
+}
+
+async function markOrdersPaidIfComplete(payment) {
+  const table = await Table.findById(payment.tableId);
+  if (!table) return false;
+  const groupTables = await resolveGroupTables(table);
+  const sessionOrders = await Order.find({
+    ...sessionScopedTableFilter(groupTables),
+    status: { $ne: "cancelled" },
+  });
+  const sessionPayments = await findSessionPayments(table, groupTables);
+
+  const hasWholeBillPayment = sessionPayments.some(
+    (candidate) => candidate.status === "paid" && candidate.splitType !== "items"
+  );
+  const pendingWholeBillPayment = sessionPayments.some(
+    (candidate) => candidate.status === "pending" && candidate.splitType !== "items"
+  );
+
+  let completelyPaid = hasWholeBillPayment && !pendingWholeBillPayment;
+  if (!completelyPaid && sessionPayments.some((candidate) => candidate.splitType === "items")) {
+    const paidItemKeys = new Set(
+      sessionPayments
+        .filter((candidate) => candidate.status === "paid" && candidate.splitType === "items")
+        .flatMap((candidate) => candidate.itemRefs || [])
+        .map((ref) => itemKey(ref.orderId, ref.itemId))
+    );
+    const outstandingItemKeys = sessionOrders.flatMap((order) =>
+      order.items
+        .filter((item) => item.itemStatus !== "cancelled")
+        .map((item) => itemKey(order._id, item._id))
+    );
+    completelyPaid = outstandingItemKeys.length > 0 && outstandingItemKeys.every((key) => paidItemKeys.has(key));
+  }
+
+  if (completelyPaid) {
+    await Order.updateMany({ _id: { $in: sessionOrders.map((order) => order._id) } }, { status: "served" });
+  }
+  return completelyPaid;
 }
 
 // POST /api/payment/promptpay  (public, customer)
@@ -56,13 +151,33 @@ export async function createPromptPayPayment(req, res) {
   const groupTables = await resolveGroupTables(table);
   const groupTableIds = groupTables.map((t) => t._id);
 
+  try {
+    await ensureCheckoutAvailable(table, groupTables, itemRefs?.length ? "items" : "full", itemRefs);
+  } catch (error) {
+    return sendPaymentConflict(res, error);
+  }
+
   let orders;
   if (Array.isArray(orderIds) && orderIds.length > 0) {
-    orders = await Order.find({ _id: { $in: orderIds }, tableId: { $in: groupTableIds } });
+    orders = await Order.find({
+      _id: { $in: orderIds },
+      ...sessionScopedTableFilter(groupTables),
+      status: { $ne: "cancelled" },
+    });
   } else {
     orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
   }
   if (orders.length === 0) return res.status(400).json({ error: "ยังไม่มีออเดอร์สำหรับชำระเงิน" });
+
+  if (itemRefs?.length) {
+    const validItemKeys = new Set(
+      orders.flatMap((order) => order.items.filter((item) => item.itemStatus !== "cancelled").map((item) => itemKey(order._id, item._id)))
+    );
+    const selectedItemKeys = itemRefs.map((ref) => itemKey(ref.orderId, ref.itemId));
+    if (new Set(selectedItemKeys).size !== selectedItemKeys.length || !selectedItemKeys.every((key) => validItemKeys.has(key))) {
+      return res.status(400).json({ error: "มีรายการอาหารที่เลือกไม่ถูกต้อง" });
+    }
+  }
 
   const { subtotal, serviceCharge, vat, amount } = await computeAmount({ orders, restaurant, itemRefs });
   if (amount <= 0) return res.status(400).json({ error: "ยอดชำระต้องมากกว่า 0" });
@@ -108,6 +223,11 @@ export async function createSplitPayment(req, res) {
 
   const groupTables = await resolveGroupTables(table);
   const groupTableIds = groupTables.map((t) => t._id);
+  try {
+    await ensureCheckoutAvailable(table, groupTables, "equal");
+  } catch (error) {
+    return sendPaymentConflict(res, error);
+  }
   const orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
   if (orders.length === 0) return res.status(400).json({ error: "ยังไม่มีออเดอร์สำหรับชำระเงิน" });
 
@@ -170,6 +290,11 @@ export async function createBuffetPayment(req, res) {
 
   const groupTables = await resolveGroupTables(table);
   const groupTableIds = groupTables.map((t) => t._id);
+  try {
+    await ensureCheckoutAvailable(table, groupTables, "buffet");
+  } catch (error) {
+    return sendPaymentConflict(res, error);
+  }
   const orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
   const amount = +(restaurant.buffetPricePerPerson * n).toFixed(2);
 
@@ -206,30 +331,29 @@ export async function createBuffetPayment(req, res) {
 
 // POST /api/payment/:id/confirm  (staff/cashier marks as paid manually, or webhook calls this)
 export async function confirmPayment(req, res) {
-  const payment = await Payment.findById(req.params.id);
-  if (!payment) return res.status(404).json({ error: "Payment not found" });
-
-  payment.status = "paid";
-  payment.paidAt = new Date();
-  await payment.save();
-
-  // only mark orders served once ALL splits/payments covering them are paid
-  const siblingPending = await Payment.find({
-    orderIds: { $in: payment.orderIds },
-    status: "pending",
-    _id: { $ne: payment._id },
-  });
-  if (siblingPending.length === 0) {
-    await Order.updateMany({ _id: { $in: payment.orderIds } }, { status: "served" });
+  // Scope the lookup to the authenticated staff member's restaurant. Object IDs
+  // must never be enough for staff from another restaurant to confirm a payment.
+  const payment = await Payment.findOneAndUpdate(
+    { _id: req.params.id, restaurantId: req.staff.restaurantId, status: "pending" },
+    { status: "paid", paidAt: new Date() },
+    { new: true }
+  );
+  if (!payment) {
+    const existing = await Payment.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId }).select("status");
+    if (!existing) return res.status(404).json({ error: "Payment not found" });
+    return res.status(409).json({ error: `Payment is already ${existing.status}` });
   }
 
-  // Update table status to cleaning/paid when payment is confirmed
-  // This fixes the bug where table still shows waiting_bill after payment confirmation
-  const groupTables = await resolveGroupTables(await Table.findById(payment.tableId));
-  for (const table of groupTables) {
-    table.status = "cleaning";
-    await table.save();
-    emitTableStatus(table.restaurantId, table);
+  const fullyPaid = await markOrdersPaidIfComplete(payment);
+
+  // Keep a split bill at waiting_bill until every covered item is paid.
+  if (fullyPaid) {
+    const groupTables = await resolveGroupTables(await Table.findById(payment.tableId));
+    for (const table of groupTables) {
+      table.status = "cleaning";
+      await table.save();
+      emitTableStatus(table.restaurantId, table);
+    }
   }
 
   emitPaymentUpdated(payment.restaurantId, payment);
@@ -252,24 +376,19 @@ export async function paymentWebhook(req, res) {
   if (!payment) return res.status(404).json({ error: "Payment not found" });
 
   if (status === "success") {
+    if (payment.status !== "pending") return res.json({ received: true });
     payment.status = "paid";
     payment.paidAt = new Date();
     await payment.save();
-    const siblingPending = await Payment.find({
-      orderIds: { $in: payment.orderIds },
-      status: "pending",
-      _id: { $ne: payment._id },
-    });
-    if (siblingPending.length === 0) {
-      await Order.updateMany({ _id: { $in: payment.orderIds } }, { status: "served" });
-    }
+    const fullyPaid = await markOrdersPaidIfComplete(payment);
 
-    // Update table status to cleaning when payment is confirmed via webhook
-    const groupTables = await resolveGroupTables(await Table.findById(payment.tableId));
-    for (const table of groupTables) {
-      table.status = "cleaning";
-      await table.save();
-      emitTableStatus(table.restaurantId, table);
+    if (fullyPaid) {
+      const groupTables = await resolveGroupTables(await Table.findById(payment.tableId));
+      for (const table of groupTables) {
+        table.status = "cleaning";
+        await table.save();
+        emitTableStatus(table.restaurantId, table);
+      }
     }
 
     emitPaymentUpdated(payment.restaurantId, payment);

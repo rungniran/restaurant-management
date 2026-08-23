@@ -18,14 +18,14 @@ const routes = [
   { path: "/login", name: "login", component: LoginView },
   { path: "/signup", name: "signup", component: SignUpView },
   { path: "/change-password", name: "change-password", component: ChangePasswordView },
-  { path: "/setup", name: "setup", component: SetupWizardView },
-  { path: "/dashboard", name: "dashboard", component: DashboardView },
-  { path: "/tables", name: "tables", component: TablesView },
-  { path: "/reservations", name: "reservations", component: ReservationsView },
-  { path: "/payments", name: "payments", component: PaymentHistoryView },
-  { path: "/menu", name: "menu", component: MenuManageView },
-  { path: "/kitchen", name: "kitchen", component: BoardView },
-  { path: "/staff-accounts", name: "staffAccounts", component: StaffManageView },
+  { path: "/setup", name: "setup", component: SetupWizardView, meta: { roles: ["owner", "manager"] } },
+  { path: "/dashboard", name: "dashboard", component: DashboardView, meta: { roles: ["owner", "manager"] } },
+  { path: "/tables", name: "tables", component: TablesView, meta: { roles: ["owner", "manager", "waiter", "cashier"] } },
+  { path: "/reservations", name: "reservations", component: ReservationsView, meta: { roles: ["owner", "manager", "waiter"] } },
+  { path: "/payments", name: "payments", component: PaymentHistoryView, meta: { roles: ["owner", "manager", "cashier"] } },
+  { path: "/menu", name: "menu", component: MenuManageView, meta: { roles: ["owner", "manager"] } },
+  { path: "/kitchen", name: "kitchen", component: BoardView, meta: { roles: ["owner", "manager", "kitchen"] } },
+  { path: "/staff-accounts", name: "staffAccounts", component: StaffManageView, meta: { roles: ["owner", "manager"] } },
 ];
 
 const router = createRouter({
@@ -56,6 +56,10 @@ router.beforeEach((to) => {
 
   if (auth.isLoggedIn && to.name === "setup" && !isOwnerFlow) {
     return { name: "tables" };
+  }
+
+  if (auth.isLoggedIn && to.meta.roles && !to.meta.roles.includes(auth.staff?.role)) {
+    return { name: auth.staff?.role === "kitchen" ? "kitchen" : "tables" };
   }
 });
 

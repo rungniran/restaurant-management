@@ -14,6 +14,7 @@
     </header>
 
     <p class="hint">ติ๊กเลือกหลายโต๊ะ แล้วกด "ต่อโต๊ะ" เพื่อรวมบิลของกลุ่ม (สำหรับลูกค้ากลุ่มใหญ่นั่งหลายโต๊ะ)</p>
+    <p v-if="tables.error" class="error-text">{{ tables.error }}</p>
 
     <div v-if="tables.loading" class="empty">กำลังโหลด...</div>
 
@@ -39,14 +40,13 @@
           </div>
 
           <div class="table-actions">
-            <select :value="t.status" @change="tables.updateStatus(t._id, $event.target.value)">
-              <option value="available">ว่าง</option>
-              <option value="occupied">มีลูกค้า</option>
-              <option value="ordering">กำลังสั่ง</option>
-              <option value="waiting_bill">รอเช็คบิล</option>
-              <option value="paid">จ่ายแล้ว</option>
-              <option value="cleaning">กำลังทำความสะอาด</option>
+            <select v-if="!['waiting_bill', 'paid'].includes(t.status)" :value="t.status" @change="updateStatus(t, $event.target.value)">
+              <option :value="t.status">{{ statusLabel(t.status) }}</option>
+              <option v-if="t.status !== 'occupied'" value="occupied">มีลูกค้า</option>
+              <option v-if="t.status !== 'ordering'" value="ordering">กำลังสั่ง</option>
+              <option v-if="t.status !== 'cleaning'" value="cleaning">กำลังทำความสะอาด</option>
             </select>
+            <span v-else class="status-note">สถานะอัปเดตจากการชำระเงิน</span>
 
             <button class="btn small btn-info" @click="showQRCode(t)"><i class="fa-solid fa-qrcode"></i> QR Code</button>
             <button v-if="t.groupId" class="btn small" @click="tables.unmergeTable(t._id)">แยกโต๊ะ</button>
@@ -161,9 +161,19 @@ async function doMerge() {
 async function release(t) {
   const res = await tables.releaseTable(t._id, false);
   if (!res.ok) {
-    if (confirm(`${res.error}\n\nต้องการปล่อยโต๊ะแบบบังคับ (force) หรือไม่?`)) {
+    if (res.status === 400 && confirm(`${res.error}\n\nยืนยันว่าตรวจสอบกับครัวและแคชเชียร์แล้ว จึงปล่อยโต๊ะแบบบังคับ?`)) {
       await tables.releaseTable(t._id, true);
+    } else if (res.status !== 400) {
+      alert(res.error);
     }
+  }
+}
+
+async function updateStatus(table, status) {
+  try {
+    await tables.updateStatus(table._id, status);
+  } catch (err) {
+    tables.error = err.response?.data?.error || "เปลี่ยนสถานะโต๊ะไม่สำเร็จ";
   }
 }
 
@@ -249,6 +259,8 @@ h2 {
   color: var(--muted);
   padding: 40px 0;
 }
+.error-text { color: var(--danger); font-size: 13px; margin: 0 0 12px; }
+.status-note { color: var(--muted); font-size: 12px; padding: 6px 0; }
 .zone-block {
   margin-bottom: 26px;
 }

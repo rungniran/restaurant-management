@@ -4,6 +4,16 @@ import Table from "../models/Table.js";
 import { emitNewOrder, emitOrderUpdated, emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff } from "../utils/session.js";
 
+const ITEM_STATUS_TRANSITIONS = {
+  new: ["accepted", "cancelled"],
+  accepted: ["cooking", "cancelled"],
+  cooking: ["done", "cancelled"],
+  done: [],
+  cancelled: [],
+};
+
+const ORDER_STATUSES = new Set(["pending", "accepted", "cooking", "served", "cancelled"]);
+
 function genOrderNumber() {
   const now = new Date();
   const stamp = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`;
@@ -153,11 +163,19 @@ export async function updateOrderItemStatus(req, res) {
   const { orderId, itemId } = req.params;
   const { itemStatus } = req.body;
 
+  if (typeof itemStatus !== "string" || !Object.hasOwn(ITEM_STATUS_TRANSITIONS, itemStatus)) {
+    return res.status(400).json({ error: "Invalid item status" });
+  }
+
   const order = await Order.findOne({ _id: orderId, restaurantId: req.staff.restaurantId });
   if (!order) return res.status(404).json({ error: "Order not found" });
 
   const item = order.items.id(itemId);
   if (!item) return res.status(404).json({ error: "Order item not found" });
+  if (item.itemStatus === itemStatus) return res.json(order);
+  if (!ITEM_STATUS_TRANSITIONS[item.itemStatus].includes(itemStatus)) {
+    return res.status(409).json({ error: `Cannot change item status from ${item.itemStatus} to ${itemStatus}` });
+  }
   item.itemStatus = itemStatus;
 
   // derive overall order status from item statuses
@@ -180,6 +198,9 @@ export async function updateOrderItemStatus(req, res) {
 // PATCH /api/order/:orderId/status  { status }  (staff auth) - bulk order-level update
 export async function updateOrderStatus(req, res) {
   const { status } = req.body;
+  if (typeof status !== "string" || !ORDER_STATUSES.has(status)) {
+    return res.status(400).json({ error: "Invalid order status" });
+  }
   const order = await Order.findOneAndUpdate(
     { _id: req.params.orderId, restaurantId: req.staff.restaurantId },
     { status, ...(status === "served" ? { servedAt: new Date() } : {}) },

@@ -5,6 +5,8 @@ export const usePaymentsStore = defineStore("payments", {
   state: () => ({
     payments: [],
     loading: false,
+    confirmingId: null,
+    error: null,
     filters: { status: "", method: "", from: "", to: "" },
   }),
 
@@ -28,9 +30,19 @@ export const usePaymentsStore = defineStore("payments", {
     },
 
     async confirmPayment(id) {
-      const { data } = await api.post(`/payment/${id}/confirm`);
-      const idx = this.payments.findIndex((p) => p._id === id);
-      if (idx !== -1) this.payments[idx] = data;
+      this.confirmingId = id;
+      this.error = null;
+      try {
+        const { data } = await api.post(`/payment/${id}/confirm`);
+        const idx = this.payments.findIndex((p) => p._id === id);
+        if (idx !== -1) this.payments[idx] = data;
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || "ยืนยันการชำระเงินไม่สำเร็จ";
+        return false;
+      } finally {
+        this.confirmingId = null;
+      }
     },
   },
 });

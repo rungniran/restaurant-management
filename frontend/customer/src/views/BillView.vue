@@ -10,14 +10,19 @@
 
     <template v-else>
       <!-- Step 1: choose how to pay -->
-      <div v-if="!activePayments.length" class="mode-picker">
+      <div v-if="!pendingPayments.length" class="mode-picker">
         <div v-if="billSummary.perTable?.length > 1" class="group-note card">
           <i class="fa-solid fa-link"></i> โต๊ะนี้ถูกรวมบิลกับ: {{ billSummary.perTable.map((t) => t.tableNumber).join(", ") }}
         </div>
 
         <div class="total-preview card">
-          <span>ยอดค่าอาหารทั้งหมด</span>
-          <strong>฿{{ billSummary.subtotal || 0 }}</strong>
+          <div>
+            <span>ค่าอาหาร ฿{{ billSummary.subtotal || 0 }}</span>
+            <small v-if="billSummary.serviceCharge || billSummary.vat">
+              ค่าบริการ ฿{{ billSummary.serviceCharge || 0 }} · VAT ฿{{ billSummary.vat || 0 }}
+            </small>
+          </div>
+          <strong>฿{{ billSummary.total || 0 }}</strong>
         </div>
 
         <div class="mode-tabs">
@@ -31,7 +36,7 @@
         <div v-if="mode === 'full'" class="mode-panel card">
           <p class="mode-desc">ชำระค่าอาหารทั้งหมดในบิลนี้ในครั้งเดียว</p>
           <button class="btn-primary full-w" :disabled="requesting" @click="payFull">
-            {{ requesting ? "กำลังสร้าง QR..." : `ขอ QR ชำระเต็มบิล · ฿${billSummary.subtotal}` }}
+            {{ requesting ? "กำลังสร้าง QR..." : `ขอ QR ชำระเต็มบิล · ฿${billSummary.total || 0}` }}
           </button>
         </div>
 
@@ -72,15 +77,20 @@
               <input
                 type="checkbox"
                 :checked="isItemPicked(order._id, item._id)"
+                :disabled="item.itemStatus === 'cancelled' || itemPaymentState(order._id, item._id)"
                 @change="toggleItemPick(order._id, item._id)"
               />
               <span class="pick-item-name">{{ item.quantity }}x {{ item.name }}</span>
+              <span v-if="item.itemStatus === 'cancelled'" class="item-paid-state">ยกเลิก</span>
+              <span v-else-if="itemPaymentState(order._id, item._id)" class="item-paid-state">
+                {{ itemPaymentState(order._id, item._id) === 'paid' ? 'ชำระแล้ว' : 'กำลังชำระ' }}
+              </span>
               <span class="pick-item-price">฿{{ item.lineTotal }}</span>
             </label>
           </div>
-          <div class="picked-total">รวมที่เลือก: ฿{{ pickedTotal }}</div>
+          <div class="picked-total">รวมที่เลือก: ฿{{ pickedTotal }} <small>ยอดสุทธิ ฿{{ pickedGrandTotal }}</small></div>
           <button class="btn-primary full-w" :disabled="requesting || pickedItems.length === 0" @click="payItems">
-            {{ requesting ? "กำลังสร้าง QR..." : `ขอ QR ชำระ · ฿${pickedTotal}` }}
+            {{ requesting ? "กำลังสร้าง QR..." : `ขอ QR ชำระ · ฿${pickedGrandTotal}` }}
           </button>
         </div>
 
@@ -91,8 +101,8 @@
       <div v-else class="qr-results">
         <button class="btn-secondary back-to-modes" @click="resetToModePicker">← เลือกวิธีจ่ายใหม่</button>
 
-        <div v-for="(p, idx) in activePayments" :key="p._id || idx" class="bill-card card">
-          <div v-if="activePayments.length > 1" class="split-label">คนที่ {{ idx + 1 }} / {{ activePayments.length }}</div>
+        <div v-for="(p, idx) in pendingPayments" :key="p._id || idx" class="bill-card card">
+          <div v-if="pendingPayments.length > 1" class="split-label">คนที่ {{ idx + 1 }} / {{ pendingPayments.length }}</div>
           <div class="amount-big">฿{{ p.amount }}</div>
 
           <template v-if="p.status !== 'paid'">
@@ -145,6 +155,7 @@ const canvasRefs = ref({});
 onMounted(async () => {
   if (!tableStore.table) await tableStore.loadTable(props.qrToken);
   await loadSummary();
+  await restorePayments();
 
   // came from "จ่ายออเดอร์นี้เลย" with a specific orderId in query
   const preselectOrderId = route.query.orderIds;
@@ -165,6 +176,7 @@ onUnmounted(() => {
 function onPaymentUpdated(payment) {
   const idx = activePayments.value.findIndex((p) => p._id === payment._id);
   if (idx !== -1) activePayments.value[idx] = { ...activePayments.value[idx], ...payment };
+  loadSummary();
 }
 
 async function loadSummary() {
@@ -180,7 +192,7 @@ async function loadSummary() {
 }
 
 const estPerPerson = computed(() => {
-  const total = billSummary.value.subtotal || 0;
+  const total = billSummary.value.total || 0;
   return splitCount.value ? +(total / splitCount.value).toFixed(2) : 0;
 });
 
@@ -199,10 +211,23 @@ const pickedTotal = computed(() => {
   return total;
 });
 
+const pickedGrandTotal = computed(() => {
+  const subtotal = pickedTotal.value;
+  const serviceCharge = +(subtotal * ((billSummary.value.serviceChargePercent || 0) / 100)).toFixed(2);
+  const vat = +((subtotal + serviceCharge) * ((billSummary.value.vatPercent || 0) / 100)).toFixed(2);
+  return +(subtotal + serviceCharge + vat).toFixed(2);
+});
+
+const pendingPayments = computed(() => activePayments.value.filter((payment) => payment.status === "pending"));
+
 function isItemPicked(orderId, itemId) {
   return pickedItems.value.some((p) => p.orderId === orderId && p.itemId === itemId);
 }
+function itemPaymentState(orderId, itemId) {
+  return billSummary.value.itemPaymentState?.[`${orderId}:${itemId}`] || null;
+}
 function toggleItemPick(orderId, itemId) {
+  if (itemPaymentState(orderId, itemId)) return;
   if (isItemPicked(orderId, itemId)) {
     pickedItems.value = pickedItems.value.filter((p) => !(p.orderId === orderId && p.itemId === itemId));
   } else {
@@ -222,6 +247,7 @@ async function payFull(orderIdsOverride) {
     renderAllQr();
   } catch (err) {
     error.value = err.response?.data?.error || "สร้าง QR ไม่สำเร็จ";
+    if (err.response?.status === 409) await restorePayments();
   } finally {
     requesting.value = false;
   }
@@ -237,6 +263,7 @@ async function paySplit() {
     renderAllQr();
   } catch (err) {
     error.value = err.response?.data?.error || "สร้าง QR ไม่สำเร็จ";
+    if (err.response?.status === 409) await restorePayments();
   } finally {
     requesting.value = false;
   }
@@ -252,6 +279,7 @@ async function payBuffet() {
     renderAllQr();
   } catch (err) {
     error.value = err.response?.data?.error || "สร้าง QR บุฟเฟ่ต์ไม่สำเร็จ";
+    if (err.response?.status === 409) await restorePayments();
   } finally {
     requesting.value = false;
   }
@@ -267,6 +295,7 @@ async function payItems() {
     renderAllQr();
   } catch (err) {
     error.value = err.response?.data?.error || "สร้าง QR ไม่สำเร็จ";
+    if (err.response?.status === 409) await restorePayments();
   } finally {
     requesting.value = false;
   }
@@ -297,7 +326,19 @@ function statusChip(p) {
 function resetToModePicker() {
   activePayments.value = [];
   pickedItems.value = [];
+  restorePayments();
   loadSummary();
+}
+
+async function restorePayments() {
+  try {
+    const { data } = await api.get(`/payment/table/${props.qrToken}`);
+    activePayments.value = data;
+    await nextTick();
+    renderAllQr();
+  } catch {
+    // The bill remains usable; a subsequent payment request will show its own error.
+  }
 }
 
 function goStatus() {
@@ -343,6 +384,7 @@ function goStatus() {
   font-size: 20px;
   color: var(--marigold-deep);
 }
+.total-preview small, .picked-total small { display: block; color: #6b7268; font-weight: 400; font-size: 11px; margin-top: 3px; }
 .mode-tabs {
   display: flex;
   gap: 8px;
@@ -421,6 +463,7 @@ function goStatus() {
   color: var(--marigold-deep);
   font-weight: 600;
 }
+.item-paid-state { color: var(--forest); font-size: 11px; font-weight: 700; }
 .picked-total {
   text-align: right;
   font-weight: 700;

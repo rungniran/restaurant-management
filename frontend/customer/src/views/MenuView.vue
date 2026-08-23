@@ -11,7 +11,9 @@
         <div class="eyebrow"><i class="fa-solid fa-utensils"></i> โต๊ะ</div>
         <h1 class="table-num">{{ tableStore.table?.tableNumber }}</h1>
       </div>
-      <button class="call-btn" @click="callStaff"><i class="fa-solid fa-bell"></i> เรียกพนักงาน</button>
+      <button class="call-btn" :disabled="callingStaff" @click="callStaff">
+        <i class="fa-solid fa-bell"></i> {{ callingStaff ? "กำลังเรียก..." : callStaffMessage || "เรียกพนักงาน" }}
+      </button>
     </header>
 
     <div class="search-wrap">
@@ -103,6 +105,8 @@ const cartStore = useCartStore();
 const search = ref("");
 const selectedItem = ref(null);
 const activeCat = ref(null);
+const callingStaff = ref(false);
+const callStaffMessage = ref("");
 
 const filteredCategories = computed(() => {
   if (!search.value.trim()) return cartStore.categories;
@@ -164,9 +168,18 @@ function onAdd(payload) {
   cartStore.addToCart(payload);
 }
 
-function callStaff() {
-  tableStore.callStaff("call_staff");
-  alert("เรียกพนักงานแล้ว กรุณารอสักครู่");
+async function callStaff() {
+  callingStaff.value = true;
+  callStaffMessage.value = "";
+  try {
+    await tableStore.callStaff("call_staff");
+    callStaffMessage.value = "เรียกแล้ว";
+  } catch {
+    callStaffMessage.value = "เรียกไม่สำเร็จ";
+  } finally {
+    callingStaff.value = false;
+    setTimeout(() => (callStaffMessage.value = ""), 3000);
+  }
 }
 
 function goCart() {

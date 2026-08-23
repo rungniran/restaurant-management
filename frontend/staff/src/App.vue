@@ -151,4 +151,23 @@ nav {
   padding: 24px 28px;
   overflow-y: auto;
 }
+@media (max-width: 768px) {
+  .shell { display: block; }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: auto;
+    padding: 10px 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .brand { margin: 0; padding: 0; font-size: 16px; white-space: nowrap; }
+  nav { flex: initial; flex-direction: row; gap: 4px; overflow-x: auto; }
+  .nav-item { padding: 8px 10px; white-space: nowrap; }
+  .sidebar-footer { display: none; }
+  .content { padding: 16px; overflow: visible; }
+}
 </style>

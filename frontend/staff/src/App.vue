@@ -29,12 +29,14 @@
       <router-view />
     </main>
   </div>
+  <InstallAppPrompt />
 </template>
 
 <script setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "./stores/auth";
+import InstallAppPrompt from "./components/InstallAppPrompt.vue";
 
 const route = useRoute();
 const router = useRouter();

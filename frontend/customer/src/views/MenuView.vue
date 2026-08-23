@@ -6,32 +6,30 @@
   </div>
 
   <template v-else>
-    <div class="sticky-head">
-      <header class="top-bar">
-        <div class="brand-block">
-          <div class="eyebrow"><i class="fa-solid fa-utensils"></i> โต๊ะ</div>
-          <h1 class="table-num">{{ tableStore.table?.tableNumber }}</h1>
-        </div>
-        <button class="call-btn" @click="callStaff"><i class="fa-solid fa-bell"></i> เรียกพนักงาน</button>
-      </header>
-
-      <div class="search-wrap">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input v-model="search" type="text" placeholder="ค้นหาเมนูโปรดของคุณ..." class="search-input" />
+    <header class="top-bar">
+      <div class="brand-block">
+        <div class="eyebrow"><i class="fa-solid fa-utensils"></i> โต๊ะ</div>
+        <h1 class="table-num">{{ tableStore.table?.tableNumber }}</h1>
       </div>
+      <button class="call-btn" @click="callStaff"><i class="fa-solid fa-bell"></i> เรียกพนักงาน</button>
+    </header>
 
-      <nav class="cat-tabs">
-        <button
-          v-for="cat in cartStore.categories"
-          :key="cat._id"
-          class="cat-tab"
-          :class="{ active: activeCat === cat._id }"
-          @click="scrollTo(cat._id)"
-        >
-          {{ cat.name }}
-        </button>
-      </nav>
+    <div class="search-wrap">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+      <input v-model="search" type="text" placeholder="ค้นหาเมนูโปรดของคุณ..." class="search-input" />
     </div>
+
+    <nav class="cat-tabs">
+      <button
+        v-for="cat in cartStore.categories"
+        :key="cat._id"
+        class="cat-tab"
+        :class="{ active: activeCat === cat._id }"
+        @click="scrollTo(cat._id)"
+      >
+        {{ cat.name }}
+      </button>
+    </nav>
 
     <main class="menu-body">
       <section v-for="cat in filteredCategories" :key="cat._id" :id="`cat-${cat._id}`" class="cat-section">
@@ -184,28 +182,27 @@ function goStatus() {
 .loading-state {
   padding: 60px 20px;
   text-align: center;
-  color: #6b7268;
+  color: var(--muted);
+  font-size: 14px;
 }
 .loading-state.error {
   color: var(--chili);
 }
-.sticky-head {
+.top-bar {
   position: sticky;
   top: 0;
-  z-index: 15;
-  background: var(--paper);
-}
-.sticky-head .top-bar {
-  position: static;
+  z-index: 20;
 }
 .eyebrow {
   font-size: 11px;
-  opacity: 0.75;
-  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.4px;
 }
 .table-num {
   color: var(--ink);
-  font-size: 22px;
+  font-size: 21px;
+  margin-top: 2px;
 }
 .call-btn {
   background: var(--paper);
@@ -215,49 +212,68 @@ function goStatus() {
   font-size: 13px;
   border-radius: 999px;
   border: 1.5px solid var(--line);
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
 .call-btn:hover {
   border-color: var(--ink);
+  background: var(--cream);
 }
 .search-wrap {
   position: relative;
-  padding: 14px 18px 6px;
+  padding: 16px 18px 14px;
+  
 }
 .search-icon {
   position: absolute;
   left: 32px;
   top: 50%;
-  transform: translateY(-45%);
+  transform: translateY(-50%);
   color: var(--muted);
   font-size: 13px;
   pointer-events: none;
 }
 .search-input {
   width: 100%;
-  padding: 10px 14px 10px 36px;
-  border: 1.5px solid var(--line);
-  background: var(--paper);
+  padding: 11px 14px 11px 36px;
+  border: 1px solid var(--line);
+  background: var(--cream);
   border-radius: 10px;
   font-size: 14px;
   font-family: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.search-input::placeholder {
+  color: var(--muted);
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--ink);
+  background: var(--paper);
 }
 .cat-tabs {
+  position: sticky;
+  top: 74px;
+  z-index: 15;
+  background: var(--paper);
   display: flex;
-  gap: 20px;
+  gap: 22px;
   overflow-x: auto;
-  padding: 10px 18px 0;
+  padding: 0 18px;
   border-bottom: 1px solid var(--line);
+      padding-top: 15px;
 }
 .cat-tab {
   background: none;
   color: var(--muted);
-  padding: 0 0 10px;
+  padding: 0 0 12px;
   border-radius: 0;
   border-bottom: 2px solid transparent;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
 }
 .cat-tab.active {
   background: none;
@@ -265,16 +281,17 @@ function goStatus() {
   border-bottom: 2px solid var(--ink);
 }
 .menu-body {
-  padding: 0 18px 20px;
+  padding: 4px 18px 24px;
 }
 .cat-section {
-  margin-top: 20px;
-  scroll-margin-top: 190px;
+  margin-top: 24px;
+  scroll-margin-top: 130px;
 }
 .cat-title {
   font-size: 16px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  letter-spacing: 0.1px;
 }
 .items-grid {
   display: flex;
@@ -287,17 +304,22 @@ function goStatus() {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  padding: 10px;
+  padding: 12px;
   text-align: left;
   align-items: flex-start;
   box-shadow: none;
+  transition: border-color 0.15s var(--ease), transform 0.1s var(--ease);
+}
+.item-card:not(.disabled):active {
+  transform: scale(0.99);
+  border-color: var(--muted);
 }
 .item-card.disabled {
   opacity: 0.5;
 }
 .item-img {
-  width: 64px;
-  height: 64px;
+  width: 62px;
+  height: 62px;
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
@@ -306,13 +328,17 @@ function goStatus() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   color: var(--muted);
 }
 .item-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.item-info {
+  flex: 1;
+  min-width: 0;
 }
 .item-name {
   font-weight: 600;
@@ -322,7 +348,10 @@ function goStatus() {
 .item-desc {
   font-size: 12.5px;
   color: var(--muted);
-  margin: 2px 0 6px;
+  margin: 2px 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .item-price-row {
   display: flex;
@@ -343,6 +372,11 @@ function goStatus() {
   padding: 5px 12px;
   border-radius: 999px;
   border: 1.5px solid var(--ink);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.quick-add:active {
+  background: var(--ink);
+  color: #fff;
 }
 .quick-stepper {
   display: flex;
@@ -365,5 +399,15 @@ function goStatus() {
   font-size: 13px;
   min-width: 12px;
   text-align: center;
+}
+.no-result {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.no-result i {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
 }
 </style>

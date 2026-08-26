@@ -27,7 +27,7 @@
       </div>
       <div class="order-total">รวม ฿{{ order.subtotal }}</div>
       <button
-        v-if="order.status !== 'cancelled' && !isOrderPaid(order)"
+        v-if="isOrderPayable(order)"
         class="pay-now-btn"
         @click="payOrderNow(order)"
       >
@@ -78,8 +78,10 @@ function statusLabel(s) {
 function itemStatusLabel(s) {
   return ITEM_STATUS_LABELS[s] || s;
 }
-function isOrderPaid(order) {
-  return order.status === "served" && tableStore.orders.every((o) => o._id !== order._id || o.status === "served");
+function isOrderPayable(order) {
+  if (!order || order.status === "cancelled") return false;
+  if (["paid", "cleaning"].includes(tableStore.table?.status)) return false;
+  return true;
 }
 
 function goMenu() {

@@ -41,7 +41,7 @@ export async function createRestaurant(req, res) {
   let username = baseUsername;
   let counter = 1;
 
-  while (await Staff.exists({ username, restaurantId: restaurant._id })) {
+  while (await Staff.exists({ username })) {
     username = `${baseUsername}-${counter}`;
     counter += 1;
   }

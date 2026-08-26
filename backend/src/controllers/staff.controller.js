@@ -93,7 +93,7 @@ export async function loginGoogle(req, res) {
     if (!restaurant) return res.status(404).json({ error: "ยังไม่มีร้านให้ใช้ระบบ" });
 
     const baseUsername = `${normalized.split("@")[0].replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "google-user"}`;
-    const username = await generateUniqueUsername(baseUsername, restaurant._id);
+    const username = await generateUniqueUsername(baseUsername);
     const passwordHash = await bcrypt.hash(`google-${Date.now()}`, 10);
 
     staff = await Staff.create({
@@ -125,11 +125,11 @@ export async function loginGoogle(req, res) {
   });
 }
 
-async function generateUniqueUsername(baseUsername, restaurantId) {
+async function generateUniqueUsername(baseUsername) {
   let username = baseUsername;
   let counter = 1;
 
-  while (await Staff.exists({ username, restaurantId })) {
+  while (await Staff.exists({ username })) {
     username = `${baseUsername}-${counter}`;
     counter += 1;
   }
@@ -161,6 +161,11 @@ export async function createStaff(req, res) {
     return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" });
   }
 
+  const existing = await Staff.findOne({ username });
+  if (existing) {
+    return res.status(409).json({ error: "Username นี้มีผู้ใช้งานแล้ว กรุณาใช้ชื่ออื่น" });
+  }
+
   // Only an existing owner may create another owner account. Managers can
   // create any other role but can never grant "owner" — otherwise a manager
   // could escalate their own privileges by creating/promoting an owner account.
@@ -188,7 +193,11 @@ export async function updateStaff(req, res) {
   const { name, username, password, role, isActive } = req.body;
   const updates = {};
   if (name !== undefined) updates.name = name;
-  if (username !== undefined) updates.username = username;
+  if (username !== undefined) {
+    const existing = await Staff.findOne({ username, _id: { $ne: req.params.id } });
+    if (existing) return res.status(409).json({ error: "Username นี้มีผู้ใช้งานแล้ว" });
+    updates.username = username;
+  }
   if (isActive !== undefined) updates.isActive = isActive;
 
   if (role !== undefined) {

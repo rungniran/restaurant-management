@@ -501,9 +501,17 @@ export async function getReceipt(req, res) {
     }
   }
 
-  const subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0);
-  const serviceCharge = +(subtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
-  const vat = +((subtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
+  let subtotal;
+  let serviceCharge = 0;
+  let vat = 0;
+
+  if (payment.splitType === "buffet") {
+    subtotal = payment.amount;
+  } else {
+    subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0);
+    serviceCharge = +(subtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
+    vat = +((subtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
+  }
 
   res.json({
     receiptNumber: payment.receiptNumber,
@@ -520,6 +528,7 @@ export async function getReceipt(req, res) {
     splitType: payment.splitType,
     splitIndex: payment.splitIndex,
     splitTotal: payment.splitTotal,
+    note: payment.note || "",
     method: payment.method,
     status: payment.status,
     paidAt: payment.paidAt,

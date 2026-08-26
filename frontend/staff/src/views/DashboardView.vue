@@ -156,14 +156,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "../stores/auth";
-import axios from "axios";
+import api from "../api/client";
 
 const auth = useAuthStore();
 const loading = ref(false);
 const error = ref(null);
 const selectedPeriod = ref("today");
+let intervalId = null;
 
 const data = reactive({
   today: {
@@ -181,19 +182,12 @@ const data = reactive({
   hourly: [],
 });
 
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
-  headers: {
-    Authorization: `Bearer ${auth.token}`,
-  },
-});
-
 async function fetchDashboard() {
   loading.value = true;
   error.value = null;
 
   try {
-    const response = await apiClient.get("/dashboard/summary");
+    const response = await api.get("/dashboard/summary");
     Object.assign(data, response.data);
   } catch (err) {
     error.value =
@@ -243,7 +237,11 @@ function getSellerBarWidth(qty) {
 onMounted(() => {
   fetchDashboard();
   // Auto-refresh every 30 seconds
-  setInterval(fetchDashboard, 30000);
+  intervalId = setInterval(fetchDashboard, 30000);
+});
+
+onUnmounted(() => {
+  if (intervalId) clearInterval(intervalId);
 });
 </script>
 

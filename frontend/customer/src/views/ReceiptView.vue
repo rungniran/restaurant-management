@@ -32,6 +32,9 @@
           <div v-if="receipt.splitType === 'equal'" class="r-meta-row split-note">
             <span>ส่วนแบ่งบิล</span><span>คนที่ {{ receipt.splitIndex }} / {{ receipt.splitTotal }} คน</span>
           </div>
+          <div v-if="receipt.splitType === 'buffet' && receipt.note" class="r-meta-row split-note">
+            <span>แพ็กเกจ</span><span>{{ receipt.note }}</span>
+          </div>
         </div>
 
         <div class="r-divider dashed" />
@@ -40,6 +43,12 @@
           <div class="r-items-head">
             <span>รายการ</span>
             <span>ยอดรวม</span>
+          </div>
+          <div v-if="receipt.items.length === 0 && receipt.splitType === 'buffet'" class="r-item">
+            <div class="r-item-main">
+              <span>{{ receipt.note || "บุฟเฟ่ต์รายหัว" }}</span>
+              <span>฿{{ receipt.amount }}</span>
+            </div>
           </div>
           <div v-for="(item, idx) in receipt.items" :key="idx" class="r-item">
             <div class="r-item-main">
@@ -100,7 +109,7 @@ onMounted(async () => {
   }
 });
 
-const METHOD_LABELS = { promptpay: "PromptPay", cash: "เงินสด", card: "บัตร" };
+const METHOD_LABELS = { promptpay: "PromptPay", cash: "เงินสด", card: "บัตร", buffet: "บุฟเฟ่ต์" };
 function methodLabel(m) {
   return METHOD_LABELS[m] || m;
 }

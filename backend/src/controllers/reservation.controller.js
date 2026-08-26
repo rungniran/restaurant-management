@@ -47,6 +47,7 @@ export async function createReservation(req, res) {
     status: "booked",
   });
 
+  await reservation.populate("tableIds", "tableNumber zone");
   res.status(201).json(reservation);
 }
 

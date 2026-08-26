@@ -10,7 +10,7 @@
 
     <template v-else>
       <!-- Step 1: choose how to pay -->
-      <div v-if="!pendingPayments.length" class="mode-picker">
+      <div v-if="!activePayments.length" class="mode-picker">
         <div v-if="billSummary.perTable?.length > 1" class="group-note card">
           <i class="fa-solid fa-link"></i> โต๊ะนี้ถูกรวมบิลกับ: {{ billSummary.perTable.map((t) => t.tableNumber).join(", ") }}
         </div>
@@ -101,8 +101,8 @@
       <div v-else class="qr-results">
         <button class="btn-secondary back-to-modes" @click="resetToModePicker">← เลือกวิธีจ่ายใหม่</button>
 
-        <div v-for="(p, idx) in pendingPayments" :key="p._id || idx" class="bill-card card">
-          <div v-if="pendingPayments.length > 1" class="split-label">คนที่ {{ idx + 1 }} / {{ pendingPayments.length }}</div>
+        <div v-for="(p, idx) in activePayments" :key="p._id || idx" class="bill-card card">
+          <div v-if="activePayments.length > 1" class="split-label">คนที่ {{ idx + 1 }} / {{ activePayments.length }}</div>
           <div class="amount-big">฿{{ p.amount }}</div>
 
           <template v-if="p.status !== 'paid'">
@@ -111,7 +111,7 @@
             </div>
             <p class="qr-hint">สแกนด้วยแอปธนาคารเพื่อชำระเงิน (PromptPay)</p>
           </template>
-          <p v-else class="paid-check">✅</p>
+          <p v-else class="paid-check">✅ ชำระเงินแล้ว</p>
 
           <span class="chip" :class="statusChip(p)">{{ statusLabel(p) }}</span>
 
@@ -175,7 +175,11 @@ onUnmounted(() => {
 
 function onPaymentUpdated(payment) {
   const idx = activePayments.value.findIndex((p) => p._id === payment._id);
-  if (idx !== -1) activePayments.value[idx] = { ...activePayments.value[idx], ...payment };
+  if (idx !== -1) {
+    activePayments.value[idx] = { ...activePayments.value[idx], ...payment };
+  } else {
+    activePayments.value.push(payment);
+  }
   loadSummary();
 }
 

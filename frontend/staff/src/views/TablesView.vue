@@ -201,31 +201,27 @@ function copyToClipboard() {
 }
 
 function printQR() {
-  const printWindow = window.open("", "", "width=600,height=600");
+  if (!qrCanvas.value) return;
+  const dataUrl = qrCanvas.value.toDataURL("image/png");
+  const printWindow = window.open("", "", "width=600,height=700");
   const url = getTableOrderUrl.value;
   printWindow.document.write(`
     <html>
     <head>
-      <title>QR Code - โต๊ะ ${selectedTable.value?.tableNumber}</title>
+      <title>QR Code - โต๊ะ ${selectedTable.value?.tableNumber || ""}</title>
       <style>
-        body { display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: Arial; }
-        h1 { margin-bottom: 20px; }
-        canvas { border: 1px solid #ccc; padding: 10px; }
-        p { margin-top: 20px; font-size: 14px; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; font-family: sans-serif; text-align: center; }
+        h1 { margin-bottom: 8px; font-size: 28px; color: #111; }
+        .url { font-size: 13px; color: #555; margin-bottom: 24px; word-break: break-all; }
+        img { border: 1px solid #ddd; padding: 12px; border-radius: 8px; max-width: 320px; }
       </style>
     </head>
     <body>
-      <h1>QR Code - โต๊ะ ${selectedTable.value?.tableNumber}</h1>
-      <p>URL: ${url}</p>
-      <div id="qr"></div>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.4/qrcode.min.js"><\/script>
+      <h1>โต๊ะ ${selectedTable.value?.tableNumber || ""}</h1>
+      <p class="url">${url}</p>
+      <img src="${dataUrl}" alt="QR Code" />
       <script>
-        new QRCode(document.getElementById("qr"), {
-          text: "${url}",
-          width: 300,
-          height: 300
-        });
-        setTimeout(() => window.print(), 500);
+        window.onload = () => { setTimeout(() => { window.print(); }, 200); };
       <\/script>
     </body>
     </html>

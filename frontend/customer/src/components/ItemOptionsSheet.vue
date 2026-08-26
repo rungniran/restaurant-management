@@ -52,7 +52,7 @@
 
       <p v-if="!canAdd" class="required-hint">กรุณาเลือกตัวเลือกที่มีเครื่องหมาย * ให้ครบ</p>
       <button class="btn-primary add-btn" :disabled="!canAdd" @click="confirmAdd">
-        เพิ่มลงตะกร้า · ฿{{ totalPrice }}
+        {{ isEdit ? "บันทึกการแก้ไข" : "เพิ่มลงตะกร้า" }} · ฿{{ totalPrice }}
       </button>
     </div>
   </div>
@@ -61,12 +61,25 @@
 <script setup>
 import { ref, computed } from "vue";
 
-const props = defineProps({ item: { type: Object, required: true } });
+const props = defineProps({
+  item: { type: Object, required: true },
+  initialQuantity: { type: Number, default: 1 },
+  initialSelectedOptions: { type: Array, default: () => [] },
+  initialNote: { type: String, default: "" },
+  isEdit: { type: Boolean, default: false },
+});
 const emit = defineEmits(["close", "add"]);
 
-const quantity = ref(1);
-const note = ref("");
+const quantity = ref(props.initialQuantity || 1);
+const note = ref(props.initialNote || "");
 const selected = ref({}); // { groupName: [choiceLabel, ...] }
+
+if (props.initialSelectedOptions?.length) {
+  for (const opt of props.initialSelectedOptions) {
+    if (!selected.value[opt.groupName]) selected.value[opt.groupName] = [];
+    selected.value[opt.groupName].push(opt.choice);
+  }
+}
 
 function isSelected(group, choice) {
   return (selected.value[group.name] || []).includes(choice.label);

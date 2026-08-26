@@ -20,6 +20,9 @@
         <button class="sound-btn" @click="kitchen.soundEnabled = !kitchen.soundEnabled">
           <i :class="['fa-solid', kitchen.soundEnabled ? 'fa-bell' : 'fa-bell-slash']"></i>
         </button>
+        <button class="sound-btn" :title="isFullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ'" @click="toggleFullscreen">
+          <i :class="['fa-solid', isFullscreen ? 'fa-compress' : 'fa-expand']"></i>
+        </button>
       </div>
     </header>
 
@@ -100,16 +103,48 @@ const stations = [
 
 const now = ref(formatClock(new Date()));
 let clockInterval, tickInterval;
+let wakeLock = null;
+const isFullscreen = ref(!!document.fullscreenElement);
+
+async function acquireWakeLock() {
+  if ("wakeLock" in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+    } catch {
+      // Device doesn't support or user denied – non-fatal
+    }
+  }
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
+function onFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement;
+}
 
 onMounted(async () => {
   await kitchen.loadOrders();
   kitchen.connectSocket();
   clockInterval = setInterval(() => (now.value = formatClock(new Date())), 1000);
   tickInterval = setInterval(() => (tick.value += 1), 1000);
+  acquireWakeLock();
+  document.addEventListener("fullscreenchange", onFullscreenChange);
+  // Re-acquire wake lock when tab becomes visible again
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") acquireWakeLock();
+  });
 });
 onUnmounted(() => {
   clearInterval(clockInterval);
   clearInterval(tickInterval);
+  wakeLock?.release?.();
+  document.removeEventListener("fullscreenchange", onFullscreenChange);
 });
 
 const tick = ref(0); // forces re-render of elapsed timers every second

@@ -13,12 +13,17 @@
 
     <div v-else>
       <div v-for="line in cartStore.cart" :key="line.lineId" class="cart-line card">
-        <div class="line-main">
-          <div class="line-name">{{ line.menuItem.name }}</div>
+        <div class="line-main" @click="editLine(line)">
+          <div class="line-name">
+            {{ line.menuItem.name }}
+          </div>
           <div v-if="line.selectedOptions?.length" class="line-opts">
             {{ line.selectedOptions.map((o) => o.choice).join(", ") }}
           </div>
           <div v-if="line.note" class="line-note">หมายเหตุ: {{ line.note }}</div>
+          <button v-if="line.menuItem.options?.length || line.note" class="edit-options-btn" @click.stop="editLine(line)">
+            <i class="fa-solid fa-pen"></i> แก้ไขตัวเลือก
+          </button>
         </div>
         <div class="line-side">
           <div class="qty-control">
@@ -41,6 +46,17 @@
 
       <p v-if="cartStore.error" class="error-text">{{ cartStore.error }}</p>
     </div>
+
+    <ItemOptionsSheet
+      v-if="editingLine"
+      :item="editingLine.menuItem"
+      :initialQuantity="editingLine.quantity"
+      :initialSelectedOptions="editingLine.selectedOptions"
+      :initialNote="editingLine.note"
+      :isEdit="true"
+      @close="editingLine = null"
+      @add="onSaveEdit"
+    />
   </main>
 
   <div v-if="cartStore.cart.length > 0" class="bottom-nav">
@@ -51,12 +67,31 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore, lineTotal } from "../stores/cart";
+import ItemOptionsSheet from "../components/ItemOptionsSheet.vue";
 
 const props = defineProps({ qrToken: String });
 const router = useRouter();
 const cartStore = useCartStore();
+
+const editingLine = ref(null);
+
+onMounted(() => {
+  cartStore.initCart(props.qrToken);
+});
+
+function editLine(line) {
+  editingLine.value = line;
+}
+
+function onSaveEdit(payload) {
+  if (editingLine.value) {
+    cartStore.updateCartLine(editingLine.value.lineId, payload);
+    editingLine.value = null;
+  }
+}
 
 function goBack() {
   router.push({ name: "menu", params: { qrToken: props.qrToken } });
@@ -163,5 +198,19 @@ async function submit() {
   color: var(--chili);
   font-size: 13px;
   margin-top: 10px;
+}
+.edit-options-btn {
+  background: #fdf6e8;
+  color: var(--marigold-deep);
+  border: 1px dashed var(--marigold);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
 }
 </style>

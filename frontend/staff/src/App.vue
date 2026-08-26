@@ -28,6 +28,7 @@
     <main class="content">
       <router-view />
     </main>
+    <ServiceRequestAlert v-if="!isLoginPage" />
   </div>
   <InstallAppPrompt />
 </template>
@@ -37,6 +38,7 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import InstallAppPrompt from "./components/InstallAppPrompt.vue";
+import ServiceRequestAlert from "./components/ServiceRequestAlert.vue";
 
 const route = useRoute();
 const router = useRouter();

@@ -17,6 +17,7 @@ export async function createServiceRequest(req, res) {
     status: "pending",
   });
 
+  await request.populate("tableId", "tableNumber zone");
   emitServiceRequest(table.restaurantId, request);
   res.status(201).json(request);
 }
@@ -26,7 +27,9 @@ export async function listPendingRequests(req, res) {
   const requests = await ServiceRequest.find({
     restaurantId: req.staff.restaurantId,
     status: "pending",
-  }).sort({ createdAt: 1 });
+  })
+    .sort({ createdAt: 1 })
+    .populate("tableId", "tableNumber zone");
   res.json(requests);
 }
 
@@ -36,7 +39,7 @@ export async function acknowledgeRequest(req, res) {
     { _id: req.params.id, restaurantId: req.staff.restaurantId },
     { status: "acknowledged" },
     { new: true }
-  );
+  ).populate("tableId", "tableNumber zone");
   if (!request) return res.status(404).json({ error: "Request not found" });
   emitServiceAcknowledged(request.restaurantId, request);
   res.json(request);

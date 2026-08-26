@@ -110,6 +110,15 @@
               <canvas :ref="(el) => setCanvasRef(el, idx)"></canvas>
             </div>
             <p class="qr-hint">สแกนด้วยแอปธนาคารเพื่อชำระเงิน (PromptPay)</p>
+            <div class="qr-actions">
+              <button class="qr-action-btn" @click="downloadQr(idx, p.amount)">
+                <i class="fa-solid fa-download"></i> บันทึกรูป QR
+              </button>
+              <button class="qr-action-btn" @click="copyAmount(p.amount)">
+                <i class="fa-solid fa-copy"></i> คัดลอกยอดเงิน
+              </button>
+            </div>
+            <p v-if="copiedMsg" class="copied-msg">{{ copiedMsg }}</p>
           </template>
           <p v-else class="paid-check">✅ ชำระเงินแล้ว</p>
 
@@ -348,6 +357,28 @@ async function restorePayments() {
 function goStatus() {
   router.push({ name: "status", params: { qrToken: props.qrToken } });
 }
+
+const copiedMsg = ref("");
+
+function downloadQr(idx, amount) {
+  const canvas = canvasRefs.value[idx];
+  if (!canvas) return;
+  const link = document.createElement("a");
+  link.download = `QR-PromptPay-${amount}baht.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+async function copyAmount(amount) {
+  try {
+    await navigator.clipboard.writeText(String(amount));
+    copiedMsg.value = `คัดลอกยอด ฿${amount} แล้ว!`;
+    setTimeout(() => (copiedMsg.value = ""), 2500);
+  } catch {
+    copiedMsg.value = "ไม่สามารถคัดลอกได้ กรุณาบันทึกด้วยตนเอง";
+    setTimeout(() => (copiedMsg.value = ""), 3000);
+  }
+}
 </script>
 
 <style scoped>
@@ -527,5 +558,34 @@ function goStatus() {
   font-weight: 700;
   font-size: 13px;
   text-decoration: underline;
+}
+.qr-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0 4px;
+}
+.qr-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--forest);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #d0cec7;
+  cursor: pointer;
+}
+.qr-action-btn:active {
+  background: #e5e0d4;
+}
+.copied-msg {
+  text-align: center;
+  font-size: 12px;
+  color: var(--forest);
+  font-weight: 600;
+  margin: 4px 0;
 }
 </style>

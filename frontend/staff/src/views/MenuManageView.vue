@@ -122,6 +122,39 @@
           </label>
         </div>
 
+        <!-- Option Groups Builder -->
+        <div class="option-groups-section">
+          <div class="option-groups-header">
+            <label>ตัวเลือกเพิ่มเติม (Options)</label>
+            <button type="button" class="btn small" @click="addOptionGroup">+ เพิ่มกลุ่มตัวเลือก</button>
+          </div>
+          <div v-for="(group, gidx) in form.options" :key="gidx" class="option-group-card">
+            <div class="option-group-row">
+              <input v-model="group.name" placeholder="ชื่อกลุ่ม เช่น ความเผ็ด" class="option-group-name" />
+              <select v-model="group.type" class="option-type-select">
+                <option value="single">เลือกได้ 1 ข้อ</option>
+                <option value="multiple">เลือกได้หลายข้อ</option>
+              </select>
+              <label class="required-toggle">
+                <input type="checkbox" v-model="group.required" />
+                จำเป็นต้องเลือก
+              </label>
+              <button type="button" class="btn small btn-danger" @click="removeOptionGroup(gidx)">ลบ</button>
+            </div>
+            <div class="choices-list">
+              <div v-for="(choice, cidx) in group.choices" :key="cidx" class="choice-row">
+                <input v-model="choice.label" placeholder="ชื่อตัวเลือก เช่น เผ็ดน้อย" />
+                <div class="extra-price-wrap">
+                  <span>+฿</span>
+                  <input v-model.number="choice.extraPrice" type="number" min="0" placeholder="0" class="extra-price-input" />
+                </div>
+                <button type="button" class="btn-icon-remove" @click="removeChoice(group, cidx)">✕</button>
+              </div>
+              <button type="button" class="btn small add-choice-btn" @click="addChoice(group)">+ เพิ่มตัวเลือก</button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button class="btn" @click="showItemModal = false">ยกเลิก</button>
           <button class="btn btn-accent" @click="submitItem">
@@ -153,6 +186,7 @@ const form = reactive({
   categoryId: "",
   station: "kitchen",
   imageUrl: "",
+  options: [], // [{ name, type, required, choices: [{ label, extraPrice }] }]
 });
 
 const STATION_LABELS = { kitchen: "ครัว", grill: "Grill", drink: "เครื่องดื่ม", dessert: "ของหวาน" };
@@ -170,7 +204,7 @@ async function addCategory() {
 }
 
 function resetForm() {
-  Object.assign(form, { name: "", description: "", price: 0, categoryId: menu.categories[0]?._id || "", station: "kitchen", imageUrl: "" });
+  Object.assign(form, { name: "", description: "", price: 0, categoryId: menu.categories[0]?._id || "", station: "kitchen", imageUrl: "", options: [] });
 }
 
 async function handleImageUpload(event) {
@@ -217,6 +251,7 @@ function openEditItem(item, categoryId) {
     categoryId,
     station: item.station,
     imageUrl: item.imageUrl || "",
+    options: JSON.parse(JSON.stringify(item.options || [])),
   });
   showItemModal.value = true;
 }
@@ -232,6 +267,20 @@ async function submitItem() {
     await menu.addItem({ ...form });
   }
   showItemModal.value = false;
+}
+
+// Option Group Helpers
+function addOptionGroup() {
+  form.options.push({ name: "", type: "single", required: false, choices: [] });
+}
+function removeOptionGroup(idx) {
+  form.options.splice(idx, 1);
+}
+function addChoice(group) {
+  group.choices.push({ label: "", extraPrice: 0 });
+}
+function removeChoice(group, cidx) {
+  group.choices.splice(cidx, 1);
 }
 </script>
 

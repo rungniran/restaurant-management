@@ -8,6 +8,7 @@ export const useCartStore = defineStore("cart", {
   state: () => ({
     categories: [], // [{ _id, name, items: [...] }]
     cart: [], // [{ lineId, menuItem, quantity, selectedOptions, note }]
+    currentQrToken: null,
     loading: false,
     submitting: false,
     error: null,
@@ -26,7 +27,35 @@ export const useCartStore = defineStore("cart", {
   },
 
   actions: {
-    async loadMenu(restaurantId) {
+    initCart(qrToken) {
+      if (qrToken) this.currentQrToken = qrToken;
+      const key = this.currentQrToken ? `cart_${this.currentQrToken}` : "cart_default";
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          this.cart = JSON.parse(saved);
+          cartLineId = Math.max(0, ...this.cart.map((c) => c.lineId || 0));
+        }
+      } catch {
+        // ignore parse error
+      }
+    },
+
+    persist() {
+      const key = this.currentQrToken ? `cart_${this.currentQrToken}` : "cart_default";
+      try {
+        if (this.cart.length > 0) {
+          localStorage.setItem(key, JSON.stringify(this.cart));
+        } else {
+          localStorage.removeItem(key);
+        }
+      } catch {
+        // ignore storage error
+      }
+    },
+
+    async loadMenu(restaurantId, qrToken) {
+      if (qrToken) this.initCart(qrToken);
       this.loading = true;
       try {
         const { data } = await api.get(`/menu/${restaurantId}`);
@@ -46,19 +75,39 @@ export const useCartStore = defineStore("cart", {
         selectedOptions,
         note,
       });
+      this.persist();
+    },
+
+    updateCartLine(lineId, { menuItem, quantity, selectedOptions, note }) {
+      const idx = this.cart.findIndex((l) => l.lineId === lineId);
+      if (idx !== -1) {
+        this.cart[idx] = {
+          lineId,
+          menuItem: menuItem || this.cart[idx].menuItem,
+          quantity: Math.max(1, quantity),
+          selectedOptions: selectedOptions || [],
+          note: note || "",
+        };
+        this.persist();
+      }
     },
 
     removeFromCart(lineId) {
       this.cart = this.cart.filter((l) => l.lineId !== lineId);
+      this.persist();
     },
 
     updateQuantity(lineId, quantity) {
       const line = this.cart.find((l) => l.lineId === lineId);
-      if (line) line.quantity = Math.max(1, quantity);
+      if (line) {
+        line.quantity = Math.max(1, quantity);
+        this.persist();
+      }
     },
 
     clearCart() {
       this.cart = [];
+      this.persist();
     },
 
     async submitOrder() {

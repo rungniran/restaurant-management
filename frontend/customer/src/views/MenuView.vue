@@ -119,7 +119,7 @@ const filteredCategories = computed(() => {
 onMounted(async () => {
   await tableStore.loadTable(props.qrToken);
   if (tableStore.restaurantId) {
-    await cartStore.loadMenu(tableStore.restaurantId);
+    await cartStore.loadMenu(tableStore.restaurantId, props.qrToken);
     activeCat.value = cartStore.categories[0]?._id;
   }
 });

@@ -69,6 +69,21 @@ export const useTablesStore = defineStore("tables", {
       socket.on("service:requested", (request) => {
         this.pendingServiceRequests.unshift(request);
       });
+
+      socket.on("service:acknowledged", (request) => {
+        this.pendingServiceRequests = this.pendingServiceRequests.filter(
+          (r) => r._id !== request._id
+        );
+      });
+    },
+
+    async acknowledgeServiceRequest(id) {
+      try {
+        await api.patch(`/service-request/${id}/acknowledge`);
+        this.pendingServiceRequests = this.pendingServiceRequests.filter((r) => r._id !== id);
+      } catch {
+        // ignore
+      }
     },
 
     async createTable(tableNumber, zone) {

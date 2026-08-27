@@ -384,12 +384,12 @@ async function copyAmount(amount) {
 <style scoped>
 .back-btn {
   background: none;
-  color: var(--cream);
+  color: var(--ink);
   font-weight: 600;
   font-size: 14px;
 }
 .page-title {
-  color: var(--cream);
+  color: var(--ink);
   font-size: 17px;
 }
 .bill-body {

@@ -1,0 +1,70 @@
+diff --git a/frontend/customer/src/views/BillView.vue b/frontend/customer/src/views/BillView.vue
+index de3f85c..10869d2 100644
+--- a/frontend/customer/src/views/BillView.vue
++++ b/frontend/customer/src/views/BillView.vue
+@@ -384,12 +384,12 @@ async function copyAmount(amount) {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .bill-body {
+diff --git a/frontend/customer/src/views/CartView.vue b/frontend/customer/src/views/CartView.vue
+index 7c09657..6a9b32f 100644
+--- a/frontend/customer/src/views/CartView.vue
++++ b/frontend/customer/src/views/CartView.vue
+@@ -110,12 +110,12 @@ async function submit() {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .cart-body {
+@@ -177,7 +177,11 @@ async function submit() {
+ .remove-btn {
+   background: none;
+   color: var(--chili);
+-  font-size: 12px;
++  font-size: 13px;
++  font-weight: 600;
++  padding: 6px 10px;
++  min-height: 36px;
++  min-width: 44px;
+ }
+ .summary {
+   padding: 14px;
+diff --git a/frontend/customer/src/views/OrderStatusView.vue b/frontend/customer/src/views/OrderStatusView.vue
+index d18ed7a..404e7de 100644
+--- a/frontend/customer/src/views/OrderStatusView.vue
++++ b/frontend/customer/src/views/OrderStatusView.vue
+@@ -98,12 +98,12 @@ function payOrderNow(order) {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .status-body {

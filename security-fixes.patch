@@ -210,10 +210,151 @@ index b71dc17..663ac66 100644
    );
    if (!item) return res.status(404).json({ error: "Menu item not found" });
 diff --git a/backend/src/controllers/payment.controller.js b/backend/src/controllers/payment.controller.js
-index 9f3a493..f405c47 100644
+index 9f3a493..2e0264a 100644
 --- a/backend/src/controllers/payment.controller.js
 +++ b/backend/src/controllers/payment.controller.js
-@@ -415,9 +415,13 @@ export async function getPaymentByTable(req, res) {
+@@ -75,7 +75,7 @@ function sendPaymentConflict(res, error) {
+   return res.status(409).json({ error: error.message, paymentId: error.paymentId });
+ }
+ 
+-async function computeAmount({ orders, restaurant, itemRefs }) {
++async function computeAmount({ orders, restaurant, itemRefs, discountAmount = 0 }) {
+   let subtotal;
+   if (itemRefs && itemRefs.length > 0) {
+     // pay for specific items only (split by items)
+@@ -88,10 +88,16 @@ async function computeAmount({ orders, restaurant, itemRefs }) {
+   } else {
+     subtotal = orders.reduce((s, o) => s + o.subtotal, 0);
+   }
+-  const serviceCharge = +(subtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
+-  const vat = +((subtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
+-  const amount = +(subtotal + serviceCharge + vat).toFixed(2);
+-  return { subtotal, serviceCharge, vat, amount };
++  // Discount is applied to the subtotal BEFORE service charge/VAT, matching
++  // how a paper bill discount normally works (ลดราคาก่อนคิดค่าบริการ/VAT).
++  // Never let it go negative — clamp at 0 rather than letting a bad
++  // discountAmount produce a negative bill.
++  const safeDiscount = Math.max(0, Math.min(discountAmount || 0, subtotal));
++  const discountedSubtotal = +(subtotal - safeDiscount).toFixed(2);
++  const serviceCharge = +(discountedSubtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
++  const vat = +((discountedSubtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
++  const amount = +(discountedSubtotal + serviceCharge + vat).toFixed(2);
++  return { subtotal, discountAmount: safeDiscount, discountedSubtotal, serviceCharge, vat, amount };
+ }
+ 
+ async function markOrdersPaidIfComplete(payment) {
+@@ -329,13 +335,109 @@ export async function createBuffetPayment(req, res) {
+   });
+ }
+ 
++// POST /api/payment/cash  (staff auth: owner/manager/cashier)
++// body: { qrToken, orderIds?, itemRefs?, discountAmount?, discountReason?, receivedAmount? }
++// Cash is confirmed by staff on the spot — the payment is created already
++// "paid", unlike the customer-initiated PromptPay/split/buffet flows which
++// start "pending" and wait for a transfer + confirmation. discountAmount is
++// ONLY accepted here (and nowhere in the public customer endpoints above),
++// since letting a client set its own discount over an unauthenticated
++// endpoint would let anyone pay whatever they want.
++export async function createCashPayment(req, res) {
++  const { qrToken, orderIds, itemRefs, discountAmount, discountReason, receivedAmount } = req.body;
++  const table = await Table.findOne({ qrToken });
++  if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
++
++  const restaurant = await Restaurant.findById(table.restaurantId);
++  if (!restaurant) return res.status(404).json({ error: "ไม่พบร้านค้า" });
++
++  const groupTables = await resolveGroupTables(table);
++  const groupTableIds = groupTables.map((t) => t._id);
++
++  try {
++    await ensureCheckoutAvailable(table, groupTables, itemRefs?.length ? "items" : "full", itemRefs);
++  } catch (error) {
++    return sendPaymentConflict(res, error);
++  }
++
++  let orders;
++  if (Array.isArray(orderIds) && orderIds.length > 0) {
++    orders = await Order.find({
++      _id: { $in: orderIds },
++      ...sessionScopedTableFilter(groupTables),
++      status: { $ne: "cancelled" },
++    });
++  } else {
++    orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
++  }
++  if (orders.length === 0) return res.status(400).json({ error: "ยังไม่มีออเดอร์สำหรับชำระเงิน" });
++
++  if (itemRefs?.length) {
++    const validItemKeys = new Set(
++      orders.flatMap((order) => order.items.filter((item) => item.itemStatus !== "cancelled").map((item) => itemKey(order._id, item._id)))
++    );
++    const selectedItemKeys = itemRefs.map((ref) => itemKey(ref.orderId, ref.itemId));
++    if (new Set(selectedItemKeys).size !== selectedItemKeys.length || !selectedItemKeys.every((key) => validItemKeys.has(key))) {
++      return res.status(400).json({ error: "มีรายการอาหารที่เลือกไม่ถูกต้อง" });
++    }
++  }
++
++  const { subtotal, discountAmount: appliedDiscount, discountedSubtotal, serviceCharge, vat, amount } =
++    await computeAmount({ orders, restaurant, itemRefs, discountAmount: Number(discountAmount) || 0 });
++  if (amount < 0) return res.status(400).json({ error: "ยอดชำระต้องไม่ติดลบ" });
++
++  let receivedAmountValue = null;
++  let changeAmount = null;
++  if (receivedAmount !== undefined && receivedAmount !== null && receivedAmount !== "") {
++    receivedAmountValue = Number(receivedAmount);
++    if (Number.isNaN(receivedAmountValue) || receivedAmountValue < amount) {
++      return res.status(400).json({ error: "จำนวนเงินที่รับมาน้อยกว่ายอดที่ต้องชำระ" });
++    }
++    changeAmount = +(receivedAmountValue - amount).toFixed(2);
++  }
++
++  const payment = await Payment.create({
++    restaurantId: table.restaurantId,
++    tableId: table._id,
++    tableIds: groupTableIds,
++    orderIds: orders.map((o) => o._id),
++    amount,
++    method: "cash",
++    status: "paid",
++    paidAt: new Date(),
++    splitType: itemRefs?.length ? "items" : "full",
++    itemRefs: itemRefs || [],
++    discountAmount: appliedDiscount,
++    discountReason: appliedDiscount > 0 ? discountReason || "" : "",
++    receivedAmount: receivedAmountValue,
++    changeAmount,
++    confirmedBy: req.staff.id,
++    receiptNumber: `${receiptNumber()}-cash`,
++  });
++
++  const fullyPaid = await markOrdersPaidIfComplete(payment);
++  if (fullyPaid) {
++    for (const t of groupTables) {
++      t.status = "cleaning";
++      await t.save();
++      emitTableStatus(t.restaurantId, t);
++    }
++  }
++
++  emitPaymentUpdated(payment.restaurantId, payment);
++  res.status(201).json({
++    payment,
++    breakdown: { subtotal, discountAmount: appliedDiscount, discountedSubtotal, serviceCharge, vat, amount, changeAmount },
++  });
++}
++
+ // POST /api/payment/:id/confirm  (staff/cashier marks as paid manually, or webhook calls this)
+ export async function confirmPayment(req, res) {
+   // Scope the lookup to the authenticated staff member's restaurant. Object IDs
+   // must never be enough for staff from another restaurant to confirm a payment.
+   const payment = await Payment.findOneAndUpdate(
+     { _id: req.params.id, restaurantId: req.staff.restaurantId, status: "pending" },
+-    { status: "paid", paidAt: new Date() },
++    { status: "paid", paidAt: new Date(), confirmedBy: req.staff.id },
+     { new: true }
+   );
+   if (!payment) {
+@@ -415,9 +517,13 @@ export async function getPaymentByTable(req, res) {
  
  // POST /api/payment/:id/close-table  (cashier closes table -> available + cleaning)
  export async function closeTable(req, res) {
@@ -229,6 +370,54 @@ index 9f3a493..f405c47 100644
    if (!table) return res.status(404).json({ error: "Table not found" });
  
    table.status = "cleaning";
+@@ -504,27 +610,44 @@ export async function getReceipt(req, res) {
+   let subtotal;
+   let serviceCharge = 0;
+   let vat = 0;
++  const discountAmount = payment.discountAmount || 0;
+ 
+   if (payment.splitType === "buffet") {
+     subtotal = payment.amount;
+   } else {
+     subtotal = lineItems.reduce((s, i) => s + i.lineTotal, 0);
+-    serviceCharge = +(subtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
+-    vat = +((subtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
++    const discountedSubtotal = Math.max(0, +(subtotal - discountAmount).toFixed(2));
++    serviceCharge = +(discountedSubtotal * (restaurant.serviceChargePercent / 100)).toFixed(2);
++    vat = +((discountedSubtotal + serviceCharge) * (restaurant.vatPercent / 100)).toFixed(2);
+   }
+ 
+   res.json({
+     receiptNumber: payment.receiptNumber,
+-    restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
++    restaurant: {
++      name: restaurant.name,
++      logoUrl: restaurant.logoUrl,
++      // Required on the receipt for it to double as a valid (abridged) tax
++      // invoice under Thai Revenue Department rules once a restaurant is
++      // VAT-registered (vatPercent > 0). If the owner hasn't filled these in
++      // yet, they'll come back empty and the frontend should visibly warn
++      // that this receipt is not a valid tax invoice until they do.
++      address: restaurant.address || "",
++      taxId: restaurant.taxId || "",
++    },
++    isValidTaxInvoice: restaurant.vatPercent > 0 ? Boolean(restaurant.taxId && restaurant.address) : null,
+     tableNumbers: tables.map((t) => t.tableNumber),
+     items: lineItems,
+     // For full/items payments this subtotal (+ service + vat) reconciles exactly
+     // with `amount`. For an equal split, this describes the WHOLE group bill
+     // (shown for transparency) while `amount` is just this person's own share.
+     subtotal,
++    discountAmount,
++    discountReason: payment.discountReason || "",
+     serviceCharge,
+     vat,
+     amount: payment.amount,
++    receivedAmount: payment.receivedAmount,
++    changeAmount: payment.changeAmount,
+     splitType: payment.splitType,
+     splitIndex: payment.splitIndex,
+     splitTotal: payment.splitTotal,
 diff --git a/backend/src/controllers/reservation.controller.js b/backend/src/controllers/reservation.controller.js
 index f826e1a..a1944e3 100644
 --- a/backend/src/controllers/reservation.controller.js
@@ -260,10 +449,10 @@ index f826e1a..a1944e3 100644
  
    if (req.body.status === "seated") {
 diff --git a/backend/src/controllers/restaurant.controller.js b/backend/src/controllers/restaurant.controller.js
-index ad1276e..aa54641 100644
+index ad1276e..62fc417 100644
 --- a/backend/src/controllers/restaurant.controller.js
 +++ b/backend/src/controllers/restaurant.controller.js
-@@ -111,8 +111,30 @@ export async function getMyRestaurant(req, res) {
+@@ -111,8 +111,31 @@ export async function getMyRestaurant(req, res) {
    res.json(restaurant);
  }
  
@@ -279,6 +468,7 @@ index ad1276e..aa54641 100644
 +  "logoUrl",
 +  "isOpen",
 +  "promptPayId",
++  "taxId",
 +  "serviceChargePercent",
 +  "vatPercent",
 +  "pricingMode",
@@ -564,6 +754,48 @@ index 729eccd..b32dd73 100644
      };
      next();
    } catch (err) {
+diff --git a/backend/src/models/Payment.js b/backend/src/models/Payment.js
+index 4ff44f0..7f7edbc 100644
+--- a/backend/src/models/Payment.js
++++ b/backend/src/models/Payment.js
+@@ -12,6 +12,21 @@ const paymentSchema = new mongoose.Schema(
+     promptPayPayload: { type: String, default: "" },
+     paidAt: Date,
+ 
++    // Discount applied by staff at checkout (flat THB amount, applied to the
++    // subtotal before service charge/VAT are calculated). Only staff-facing
++    // checkout flows may set this — never accepted from the public
++    // customer-initiated PromptPay/split/buffet endpoints, since a client
++    // could otherwise set an arbitrary discount and pay whatever it wants.
++    discountAmount: { type: Number, default: 0 },
++    discountReason: { type: String, default: "" },
++
++    // Cash-specific: what the customer physically handed over and the
++    // change given back, so cash drawer reconciliation has a paper trail
++    // instead of only "amount paid" with no record of the actual handoff.
++    receivedAmount: { type: Number, default: null },
++    changeAmount: { type: Number, default: null },
++    confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", default: null },
++
+     // Split-bill support
+     splitType: { type: String, enum: ["full", "equal", "items", "buffet"], default: "full" },
+     splitIndex: { type: Number, default: null }, // which person (1-based) when splitType=equal
+diff --git a/backend/src/models/Restaurant.js b/backend/src/models/Restaurant.js
+index f9d57d9..dc4e1d8 100644
+--- a/backend/src/models/Restaurant.js
++++ b/backend/src/models/Restaurant.js
+@@ -6,6 +6,11 @@ const restaurantSchema = new mongoose.Schema(
+     displayName: { type: String, default: "" },
+     phone: { type: String, default: "" },
+     address: { type: String, default: "" },
++    // Thai Revenue Department 13-digit taxpayer ID (เลขประจำตัวผู้เสียภาษี).
++    // Required on any tax invoice/abridged tax invoice a VAT-registered
++    // business issues — without it, a receipt from a restaurant that has
++    // vatPercent > 0 (i.e. is VAT-registered) isn't a valid tax document.
++    taxId: { type: String, default: "" },
+     logoUrl: { type: String, default: "" },
+     isOpen: { type: Boolean, default: false },
+     promptPayId: { type: String, default: "" }, // เบอร์โทร/เลขบัตร ปชช. สำหรับ PromptPay
 diff --git a/backend/src/models/Staff.js b/backend/src/models/Staff.js
 index 1f3eb65..3073fb5 100644
 --- a/backend/src/models/Staff.js
@@ -580,6 +812,26 @@ index 1f3eb65..3073fb5 100644
    },
    { timestamps: true }
  );
+diff --git a/backend/src/routes/payment.routes.js b/backend/src/routes/payment.routes.js
+index face9d9..3acde9c 100644
+--- a/backend/src/routes/payment.routes.js
++++ b/backend/src/routes/payment.routes.js
+@@ -4,6 +4,7 @@ import {
+   createPromptPayPayment,
+   createSplitPayment,
+   createBuffetPayment,
++  createCashPayment,
+   confirmPayment,
+   paymentWebhook,
+   getPaymentByTable,
+@@ -25,6 +26,7 @@ router.get("/:id/receipt", getReceipt);
+ router.post("/webhook", paymentWebhook);
+ 
+ // staff/cashier
++router.post("/cash", requireAuth, requireRole("owner", "manager", "cashier"), createCashPayment);
+ router.get("/history", requireAuth, requireRole("owner", "manager", "cashier"), getPaymentHistory);
+ router.post("/:id/confirm", requireAuth, requireRole("owner", "manager", "cashier"), confirmPayment);
+ router.post("/:id/close-table", requireAuth, requireRole("owner", "manager", "cashier", "waiter"), closeTable);
 diff --git a/backend/src/sockets/index.js b/backend/src/sockets/index.js
 index dd8674c..4df75c5 100644
 --- a/backend/src/sockets/index.js

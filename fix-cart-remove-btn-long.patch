@@ -1,0 +1,111 @@
+diff --git a/frontend/customer/src/views/BillView.vue b/frontend/customer/src/views/BillView.vue
+index de3f85c..10869d2 100644
+--- a/frontend/customer/src/views/BillView.vue
++++ b/frontend/customer/src/views/BillView.vue
+@@ -384,12 +384,12 @@ async function copyAmount(amount) {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .bill-body {
+diff --git a/frontend/customer/src/views/CartView.vue b/frontend/customer/src/views/CartView.vue
+index 7c09657..239257c 100644
+--- a/frontend/customer/src/views/CartView.vue
++++ b/frontend/customer/src/views/CartView.vue
+@@ -32,7 +32,9 @@
+             <button @click="cartStore.updateQuantity(line.lineId, line.quantity + 1)">+</button>
+           </div>
+           <div class="line-price">฿{{ lineTotal(line) }}</div>
+-          <button class="remove-btn" @click="cartStore.removeFromCart(line.lineId)">ลบ</button>
++          <button class="remove-btn" @click="cartStore.removeFromCart(line.lineId)">
++            <i class="fa-solid fa-trash"></i> ลบ
++          </button>
+         </div>
+       </div>
+ 
+@@ -110,12 +112,12 @@ async function submit() {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .cart-body {
+@@ -150,13 +152,16 @@ async function submit() {
+ .line-side {
+   display: flex;
+   flex-direction: column;
+-  align-items: flex-end;
++  align-items: stretch;
+   gap: 6px;
+   flex-shrink: 0;
++  width: 100px;
+ }
+ .qty-control {
+   display: flex;
+   align-items: center;
++  justify-content: center;
++  align-self: flex-end;
+   gap: 10px;
+   background: var(--cream);
+   border-radius: 8px;
+@@ -173,11 +178,22 @@ async function submit() {
+   font-weight: 700;
+   color: var(--marigold-deep);
+   font-size: 13.5px;
++  align-self: flex-end;
+ }
+ .remove-btn {
+-  background: none;
++  background: #fdeceb;
+   color: var(--chili);
+-  font-size: 12px;
++  border: 1px solid var(--chili);
++  border-radius: 8px;
++  font-size: 13px;
++  font-weight: 600;
++  padding: 8px 10px;
++  min-height: 40px;
++  width: 100%;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: 6px;
+ }
+ .summary {
+   padding: 14px;
+diff --git a/frontend/customer/src/views/OrderStatusView.vue b/frontend/customer/src/views/OrderStatusView.vue
+index d18ed7a..404e7de 100644
+--- a/frontend/customer/src/views/OrderStatusView.vue
++++ b/frontend/customer/src/views/OrderStatusView.vue
+@@ -98,12 +98,12 @@ function payOrderNow(order) {
+ <style scoped>
+ .back-btn {
+   background: none;
+-  color: var(--cream);
++  color: var(--ink);
+   font-weight: 600;
+   font-size: 14px;
+ }
+ .page-title {
+-  color: var(--cream);
++  color: var(--ink);
+   font-size: 17px;
+ }
+ .status-body {

@@ -32,7 +32,9 @@
             <button @click="cartStore.updateQuantity(line.lineId, line.quantity + 1)">+</button>
           </div>
           <div class="line-price">฿{{ lineTotal(line) }}</div>
-          <button class="remove-btn" @click="cartStore.removeFromCart(line.lineId)">ลบ</button>
+          <button class="remove-btn" @click="cartStore.removeFromCart(line.lineId)">
+            <i class="fa-solid fa-trash"></i> ลบ
+          </button>
         </div>
       </div>
 
@@ -150,13 +152,16 @@ async function submit() {
 .line-side {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 6px;
   flex-shrink: 0;
+  width: 100px;
 }
 .qty-control {
   display: flex;
   align-items: center;
+  justify-content: center;
+  align-self: flex-end;
   gap: 10px;
   background: var(--cream);
   border-radius: 8px;
@@ -173,11 +178,22 @@ async function submit() {
   font-weight: 700;
   color: var(--marigold-deep);
   font-size: 13.5px;
+  align-self: flex-end;
 }
 .remove-btn {
-  background: none;
+  background: #fdeceb;
   color: var(--chili);
-  font-size: 12px;
+  border: 1px solid var(--chili);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  min-height: 40px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 .summary {
   padding: 14px;

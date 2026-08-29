@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+import Table from "../models/Table.js";
 
 let io = null;
 
@@ -17,8 +18,13 @@ let io = null;
  * events emitted in between were missed and orders would appear "stuck" until a
  * manual page refresh).
  *
- * Plain "join"/"leave" is still available for the public customer app, but is
- * restricted to "table:*" rooms only — no auth needed to watch your own table.
+ * Plain "join" is still available for the public customer app, but requires
+ * the table's qrToken (not its raw Mongo _id) — the server resolves the
+ * token to a table and joins that table's room itself. This matters because
+ * a table's _id is exposed to other tables in the same merge group (via
+ * getTableByToken / getBillSummary) and previously anyone who saw it could
+ * subscribe to `table:<id>` directly and watch that table's live order and
+ * payment events without ever having scanned its QR code.
  */
 export function initSocket(httpServer, corsOrigins) {
   io = new Server(httpServer, {
@@ -40,12 +46,26 @@ export function initSocket(httpServer, corsOrigins) {
       }
     }
 
-    socket.on("join", (room) => {
-      if (typeof room === "string" && room.startsWith("table:")) socket.join(room);
+    socket.on("join", async (payload) => {
+      const qrToken = typeof payload === "string" ? null : payload?.qrToken;
+      if (!qrToken || typeof qrToken !== "string") return;
+      try {
+        const table = await Table.findOne({ qrToken }).select("_id");
+        if (table) socket.join(`table:${table._id}`);
+      } catch (err) {
+        // invalid lookup - socket just won't receive table-room events
+      }
     });
 
-    socket.on("leave", (room) => {
-      if (typeof room === "string" && room.startsWith("table:")) socket.leave(room);
+    socket.on("leave", async (payload) => {
+      const qrToken = typeof payload === "string" ? null : payload?.qrToken;
+      if (!qrToken || typeof qrToken !== "string") return;
+      try {
+        const table = await Table.findOne({ qrToken }).select("_id");
+        if (table) socket.leave(`table:${table._id}`);
+      } catch (err) {
+        // no-op
+      }
     });
 
     socket.on("disconnect", () => {

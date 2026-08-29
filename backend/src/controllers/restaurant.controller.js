@@ -111,8 +111,30 @@ export async function getMyRestaurant(req, res) {
   res.json(restaurant);
 }
 
+// Fields a staff member is allowed to change about their own restaurant.
+// Deliberately excludes _id and anything not on the schema — passing
+// req.body straight into findByIdAndUpdate (the old behaviour) would let a
+// client set arbitrary/unknown fields on the document.
+const RESTAURANT_FIELDS = [
+  "name",
+  "displayName",
+  "phone",
+  "address",
+  "logoUrl",
+  "isOpen",
+  "promptPayId",
+  "serviceChargePercent",
+  "vatPercent",
+  "pricingMode",
+  "buffetPricePerPerson",
+];
+
 // PATCH /api/restaurant/me  (staff auth: owner/manager)
 export async function updateMyRestaurant(req, res) {
-  const restaurant = await Restaurant.findByIdAndUpdate(req.staff.restaurantId, req.body, { new: true });
+  const updates = {};
+  for (const field of RESTAURANT_FIELDS) {
+    if (req.body[field] !== undefined) updates[field] = req.body[field];
+  }
+  const restaurant = await Restaurant.findByIdAndUpdate(req.staff.restaurantId, updates, { new: true });
   res.json(restaurant);
 }

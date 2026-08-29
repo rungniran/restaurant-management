@@ -13,19 +13,36 @@ export async function login(req, res) {
   const query = { username, isActive: true };
   if (restaurantId) query.restaurantId = restaurantId;
 
+  // SECURITY: use one identical error message whether the username doesn't
+  // exist or the password is wrong. Returning different messages for each
+  // case lets an attacker enumerate valid usernames before even attempting
+  // to brute-force a password.
+  const GENERIC_LOGIN_ERROR = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+
   const matches = await Staff.find(query).sort({ createdAt: 1 });
   if (!matches.length) {
-    return res.status(401).json({ error: "ไม่พบผู้ใช้งานในร้านนี้" });
+    // Run a dummy bcrypt compare so this branch takes roughly the same time
+    // as the "user exists but wrong password" branch below, closing the
+    // timing side-channel that would otherwise also reveal valid usernames.
+    await bcrypt.compare(password || "", "$2a$10$CwTycUXWue0Thq9StjUM0uJ8u6JZFYvvXvBt5Q1F7EYIaWvw9nUmS");
+    return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
   }
 
   const staff = matches[0];
   const valid = await bcrypt.compare(password, staff.passwordHash);
-  if (!valid) return res.status(401).json({ error: "รหัสผ่านไม่ถูกต้อง" });
+  if (!valid) return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
+  if (!staff.isActive) return res.status(401).json({ error: GENERIC_LOGIN_ERROR });
 
   const restaurant = await Restaurant.findById(staff.restaurantId).select("name");
 
   const token = jwt.sign(
-    { id: staff._id, restaurantId: staff.restaurantId, role: staff.role, name: staff.name },
+    {
+      id: staff._id,
+      restaurantId: staff.restaurantId,
+      role: staff.role,
+      name: staff.name,
+      tokenVersion: staff.tokenVersion || 0,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "12h" }
   );
@@ -61,6 +78,8 @@ export async function changePassword(req, res) {
 
   staff.passwordHash = await bcrypt.hash(newPassword, 10);
   staff.mustChangePassword = false;
+  // Invalidate every token issued before this change (see requireAuth).
+  staff.tokenVersion = (staff.tokenVersion || 0) + 1;
   await staff.save();
 
   res.json({ success: true });
@@ -86,29 +105,30 @@ export async function loginGoogle(req, res) {
   if (!email) return res.status(400).json({ error: "Google account ไม่มีอีเมล" });
 
   const normalized = String(email).trim().toLowerCase();
-  let staff = await Staff.findOne({ email: normalized, isActive: true }).sort({ createdAt: 1 });
 
+  // SECURITY: Google login must never auto-provision a new account, and must
+  // NEVER grant "owner" to an email nobody has vetted. A staff record with a
+  // matching email has to already exist — created deliberately by an
+  // owner/manager via createStaff/updateStaff (which also sets `email`) —
+  // before that person can sign in with Google. Anyone with an unrecognized
+  // Google account is rejected, they are not silently made the owner of
+  // whichever restaurant happens to be oldest in the database.
+  const staff = await Staff.findOne({ email: normalized, isActive: true }).sort({ createdAt: 1 });
   if (!staff) {
-    const restaurant = await Restaurant.findOne({}).sort({ createdAt: 1 });
-    if (!restaurant) return res.status(404).json({ error: "ยังไม่มีร้านให้ใช้ระบบ" });
-
-    const baseUsername = `${normalized.split("@")[0].replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "google-user"}`;
-    const username = await generateUniqueUsername(baseUsername);
-    const passwordHash = await bcrypt.hash(`google-${Date.now()}`, 10);
-
-    staff = await Staff.create({
-      restaurantId: restaurant._id,
-      name: payload.name || payload.given_name || "Google User",
-      email: normalized,
-      username,
-      passwordHash,
-      role: "owner",
+    return res.status(403).json({
+      error: "อีเมลนี้ยังไม่ได้รับเชิญให้เข้าใช้งานร้านใด กรุณาติดต่อเจ้าของร้านให้เพิ่มบัญชีของคุณก่อน",
     });
   }
 
   const restaurant = await Restaurant.findById(staff.restaurantId).select("name");
   const token = jwt.sign(
-    { id: staff._id, restaurantId: staff.restaurantId, role: staff.role, name: staff.name },
+    {
+      id: staff._id,
+      restaurantId: staff.restaurantId,
+      role: staff.role,
+      name: staff.name,
+      tokenVersion: staff.tokenVersion || 0,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "12h" }
   );
@@ -123,18 +143,6 @@ export async function loginGoogle(req, res) {
       restaurantName: restaurant?.name || "",
     },
   });
-}
-
-async function generateUniqueUsername(baseUsername) {
-  let username = baseUsername;
-  let counter = 1;
-
-  while (await Staff.exists({ username })) {
-    username = `${baseUsername}-${counter}`;
-    counter += 1;
-  }
-
-  return username;
 }
 
 // GET /api/staff/me  (auth)
@@ -152,7 +160,7 @@ export async function listStaff(req, res) {
 const ASSIGNABLE_ROLES = ["manager", "cashier", "waiter", "kitchen"]; // only "owner" can grant "owner"
 
 export async function createStaff(req, res) {
-  const { name, username, password, role } = req.body;
+  const { name, username, password, role, email } = req.body;
 
   if (!name || !username || !password || !role) {
     return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบ" });
@@ -164,6 +172,14 @@ export async function createStaff(req, res) {
   const existing = await Staff.findOne({ username });
   if (existing) {
     return res.status(409).json({ error: "Username นี้มีผู้ใช้งานแล้ว กรุณาใช้ชื่ออื่น" });
+  }
+
+  const normalizedEmail = email ? String(email).trim().toLowerCase() : "";
+  if (normalizedEmail) {
+    const existingEmail = await Staff.findOne({ email: normalizedEmail });
+    if (existingEmail) {
+      return res.status(409).json({ error: "อีเมลนี้ถูกใช้งานโดยพนักงานคนอื่นแล้ว" });
+    }
   }
 
   // Only an existing owner may create another owner account. Managers can
@@ -179,39 +195,69 @@ export async function createStaff(req, res) {
     restaurantId: req.staff.restaurantId,
     name,
     username,
+    email: normalizedEmail,
     passwordHash,
     role,
     mustChangePassword: true,
   });
-  res.status(201).json({ id: staff._id, name: staff.name, username: staff.username, role: staff.role });
+  res.status(201).json({
+    id: staff._id,
+    name: staff.name,
+    username: staff.username,
+    email: staff.email,
+    role: staff.role,
+  });
 }
 
 export async function updateStaff(req, res) {
+  // Fetch the target once, up front, so every check below (owner-editing
+  // guard, tokenVersion bump) is based on the ACTUAL record being modified,
+  // never on the acting staff member's own token/claims.
+  const target = await Staff.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
+  if (!target) return res.status(404).json({ error: "Staff not found" });
+  if (target.role === "owner" && req.staff.role !== "owner") {
+    return res.status(403).json({ error: "ไม่มีสิทธิ์แก้ไขบัญชีเจ้าของร้าน" });
+  }
+
   // Whitelist editable fields — never spread req.body directly onto the
   // update, or a manager could smuggle in { role: "owner" } (privilege
   // escalation) or reassign restaurantId/other protected fields.
-  const { name, username, password, role, isActive } = req.body;
+  const { name, username, password, role, isActive, email } = req.body;
   const updates = {};
+  let tokenVersionBump = 0;
+
   if (name !== undefined) updates.name = name;
   if (username !== undefined) {
     const existing = await Staff.findOne({ username, _id: { $ne: req.params.id } });
     if (existing) return res.status(409).json({ error: "Username นี้มีผู้ใช้งานแล้ว" });
     updates.username = username;
   }
-  if (isActive !== undefined) updates.isActive = isActive;
+  if (email !== undefined) {
+    const normalizedEmail = email ? String(email).trim().toLowerCase() : "";
+    if (normalizedEmail) {
+      const existingEmail = await Staff.findOne({ email: normalizedEmail, _id: { $ne: req.params.id } });
+      if (existingEmail) return res.status(409).json({ error: "อีเมลนี้ถูกใช้งานโดยพนักงานคนอื่นแล้ว" });
+    }
+    updates.email = normalizedEmail;
+  }
+  if (isActive !== undefined) {
+    updates.isActive = isActive;
+    // Deactivating is already enforced live by requireAuth's DB re-check, but
+    // also bump tokenVersion so a *re-activated* account can't hand back out
+    // a token that was floating around from before it was disabled.
+    if (isActive === false) tokenVersionBump += 1;
+  }
 
   if (role !== undefined) {
     const allowedRoles = req.staff.role === "owner" ? ["owner", ...ASSIGNABLE_ROLES] : ASSIGNABLE_ROLES;
     if (!allowedRoles.includes(role)) {
       return res.status(403).json({ error: "ไม่มีสิทธิ์กำหนดตำแหน่งนี้" });
     }
-    // A manager may not modify an existing owner's account at all.
-    const target = await Staff.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
-    if (!target) return res.status(404).json({ error: "Staff not found" });
-    if (target.role === "owner" && req.staff.role !== "owner") {
-      return res.status(403).json({ error: "ไม่มีสิทธิ์แก้ไขบัญชีเจ้าของร้าน" });
-    }
     updates.role = role;
+    // A role change should also invalidate old tokens still carrying the
+    // stale role, even though requireAuth already re-reads the live role
+    // from the DB on every request — belt and suspenders.
+    tokenVersionBump += 1;
   }
 
   if (password) {
@@ -220,11 +266,14 @@ export async function updateStaff(req, res) {
     }
     updates.passwordHash = await bcrypt.hash(password, 10);
     updates.mustChangePassword = true; // force the staff member to set their own password on next login
+    tokenVersionBump += 1; // resetting someone else's password should log out their old sessions
   }
+
+  const mongoUpdate = tokenVersionBump > 0 ? { ...updates, $inc: { tokenVersion: tokenVersionBump } } : updates;
 
   const staff = await Staff.findOneAndUpdate(
     { _id: req.params.id, restaurantId: req.staff.restaurantId },
-    updates,
+    mongoUpdate,
     { new: true }
   ).select("-passwordHash");
   if (!staff) return res.status(404).json({ error: "Staff not found" });

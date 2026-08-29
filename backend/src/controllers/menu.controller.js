@@ -26,9 +26,17 @@ export async function createCategory(req, res) {
 }
 
 export async function updateCategory(req, res) {
+  // Whitelist editable fields — never pass req.body straight into
+  // findOneAndUpdate, or a client could smuggle in restaurantId and move
+  // this category onto another tenant's restaurant.
+  const { name, order } = req.body;
+  const updates = {};
+  if (name !== undefined) updates.name = name;
+  if (order !== undefined) updates.order = order;
+
   const category = await Category.findOneAndUpdate(
     { _id: req.params.id, restaurantId: req.staff.restaurantId },
-    req.body,
+    updates,
     { new: true }
   );
   if (!category) return res.status(404).json({ error: "Category not found" });
@@ -41,16 +49,47 @@ export async function deleteCategory(req, res) {
   res.json({ success: true });
 }
 
+// Fields a staff member is allowed to set on a menu item. Deliberately
+// excludes restaurantId — spreading req.body directly (the old behaviour)
+// let a client pass its own restaurantId and either create/reparent an item
+// onto a different tenant's restaurant.
+const MENU_ITEM_FIELDS = ["categoryId", "name", "description", "price", "imageUrl", "isAvailable", "station", "options"];
+
+function pickMenuItemFields(body) {
+  const updates = {};
+  for (const field of MENU_ITEM_FIELDS) {
+    if (body[field] !== undefined) updates[field] = body[field];
+  }
+  return updates;
+}
+
 export async function createMenuItem(req, res) {
   const { restaurantId } = req.staff;
-  const item = await MenuItem.create({ ...req.body, restaurantId });
+  const fields = pickMenuItemFields(req.body);
+
+  // categoryId must belong to this same restaurant, or a menu item could be
+  // filed under (and effectively leak into) another tenant's category.
+  if (fields.categoryId) {
+    const category = await Category.findOne({ _id: fields.categoryId, restaurantId });
+    if (!category) return res.status(400).json({ error: "ไม่พบหมวดหมู่นี้ในร้านของคุณ" });
+  }
+
+  const item = await MenuItem.create({ ...fields, restaurantId });
   res.status(201).json(item);
 }
 
 export async function updateMenuItem(req, res) {
+  const { restaurantId } = req.staff;
+  const fields = pickMenuItemFields(req.body);
+
+  if (fields.categoryId) {
+    const category = await Category.findOne({ _id: fields.categoryId, restaurantId });
+    if (!category) return res.status(400).json({ error: "ไม่พบหมวดหมู่นี้ในร้านของคุณ" });
+  }
+
   const item = await MenuItem.findOneAndUpdate(
-    { _id: req.params.id, restaurantId: req.staff.restaurantId },
-    req.body,
+    { _id: req.params.id, restaurantId },
+    fields,
     { new: true }
   );
   if (!item) return res.status(404).json({ error: "Menu item not found" });

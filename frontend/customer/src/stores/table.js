@@ -42,7 +42,12 @@ export const useTableStore = defineStore("table", {
 
     connectSocket() {
       if (!socket.connected) socket.connect();
-      socket.emit("join", `table:${this.table._id}`);
+      // Join by qrToken, not the raw table ObjectId — the server resolves it
+      // to the room itself. This means only someone who actually has this
+      // table's QR token (i.e. scanned it) can subscribe to its live
+      // updates, instead of anyone who merely knows/guesses the table's
+      // Mongo _id (which can leak via merged-table group info).
+      socket.emit("join", { qrToken: this.qrToken });
 
       socket.off("order:new");
       socket.off("order:updated");

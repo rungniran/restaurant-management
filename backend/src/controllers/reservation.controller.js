@@ -57,8 +57,23 @@ export async function updateReservation(req, res) {
   const reservation = await Reservation.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
   if (!reservation) return res.status(404).json({ error: "Reservation not found" });
 
-  Object.assign(reservation, req.body);
-  if (req.body.reservedFor) reservation.reservedFor = new Date(req.body.reservedFor);
+  // Whitelist editable fields — never Object.assign(reservation, req.body)
+  // directly, or a client could smuggle in restaurantId / _id and reparent
+  // this reservation onto another tenant's restaurant.
+  const { tableIds, customerName, phone, partySize, reservedFor, note, status } = req.body;
+  if (tableIds !== undefined) {
+    const tables = await Table.find({ _id: { $in: tableIds }, restaurantId: req.staff.restaurantId });
+    if (tables.length !== tableIds.length) {
+      return res.status(404).json({ error: "พบโต๊ะบางโต๊ะไม่ถูกต้อง" });
+    }
+    reservation.tableIds = tableIds;
+  }
+  if (customerName !== undefined) reservation.customerName = customerName;
+  if (phone !== undefined) reservation.phone = phone;
+  if (partySize !== undefined) reservation.partySize = partySize;
+  if (note !== undefined) reservation.note = note;
+  if (status !== undefined) reservation.status = status;
+  if (reservedFor) reservation.reservedFor = new Date(reservedFor);
   await reservation.save();
 
   if (req.body.status === "seated") {

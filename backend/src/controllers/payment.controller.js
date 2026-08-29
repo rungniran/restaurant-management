@@ -415,9 +415,13 @@ export async function getPaymentByTable(req, res) {
 
 // POST /api/payment/:id/close-table  (cashier closes table -> available + cleaning)
 export async function closeTable(req, res) {
-  const payment = await Payment.findById(req.params.id);
+  // SECURITY: scope to the authenticated staff member's own restaurant, same
+  // as every other staff-facing lookup in this file (see confirmPayment).
+  // Without this, staff at restaurant A could close/reset a table at
+  // restaurant B just by guessing/reusing a payment ObjectId.
+  const payment = await Payment.findOne({ _id: req.params.id, restaurantId: req.staff.restaurantId });
   if (!payment) return res.status(404).json({ error: "Payment not found" });
-  const table = await Table.findById(payment.tableId);
+  const table = await Table.findOne({ _id: payment.tableId, restaurantId: req.staff.restaurantId });
   if (!table) return res.status(404).json({ error: "Table not found" });
 
   table.status = "cleaning";

@@ -14,6 +14,11 @@ const staffSchema = new mongoose.Schema(
     },
     isActive: { type: Boolean, default: true },
     mustChangePassword: { type: Boolean, default: false },
+    // Bumped every time the password is changed/reset. Embedded in the JWT so
+    // that any token issued before a password change is rejected immediately,
+    // instead of staying valid for up to 12h after the owner thought they'd
+    // secured the account.
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

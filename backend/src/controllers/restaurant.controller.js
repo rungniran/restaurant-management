@@ -111,6 +111,8 @@ export async function getMyRestaurant(req, res) {
   res.json(restaurant);
 }
 
+import { sendLineNotification } from "../services/lineNotify.service.js";
+
 // Fields a staff member is allowed to change about their own restaurant.
 // Deliberately excludes _id and anything not on the schema — passing
 // req.body straight into findByIdAndUpdate (the old behaviour) would let a
@@ -125,8 +127,12 @@ const RESTAURANT_FIELDS = [
   "promptPayId",
   "serviceChargePercent",
   "vatPercent",
+  "taxId",
+  "branchName",
   "pricingMode",
   "buffetPricePerPerson",
+  "buffetDurationMinutes",
+  "lineNotifyToken",
 ];
 
 // PATCH /api/restaurant/me  (staff auth: owner/manager)
@@ -137,4 +143,24 @@ export async function updateMyRestaurant(req, res) {
   }
   const restaurant = await Restaurant.findByIdAndUpdate(req.staff.restaurantId, updates, { new: true });
   res.json(restaurant);
+}
+
+// POST /api/restaurant/test-line-notify  (staff auth: owner/manager)
+export async function testLineNotify(req, res) {
+  const restaurant = await Restaurant.findById(req.staff.restaurantId);
+  const token = req.body.lineNotifyToken || restaurant?.lineNotifyToken;
+  if (!token) {
+    return res.status(400).json({ error: "ยังไม่ได้ระบุ LINE Notify Token" });
+  }
+
+  const ok = await sendLineNotification(
+    token,
+    `\n🔔 ทดสอบการแจ้งเตือนจากระบบร้านอาหาร ${restaurant?.displayName || restaurant?.name || ""}\nเวลา: ${new Date().toLocaleString("th-TH")}`
+  );
+
+  if (ok) {
+    res.json({ success: true, message: "ส่งข้อความทดสอบเข้ากลุ่ม LINE สำเร็จ" });
+  } else {
+    res.status(400).json({ error: "ส่งการแจ้งเตือนไม่สำเร็จ กรุณาตรวจสอบ Token" });
+  }
 }

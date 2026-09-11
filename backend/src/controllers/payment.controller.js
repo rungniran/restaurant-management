@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import Table from "../models/Table.js";
 import Restaurant from "../models/Restaurant.js";
 import { generatePromptPayPayload } from "../services/promptpay.service.js";
+import { sendLineNotification } from "../services/lineNotify.service.js";
 import { emitPaymentUpdated, emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff, sessionScopedTableFilter } from "../utils/session.js";
 
@@ -519,7 +520,15 @@ export async function getReceipt(req, res) {
 
   res.json({
     receiptNumber: payment.receiptNumber,
-    restaurant: { name: restaurant.name, logoUrl: restaurant.logoUrl },
+    restaurant: {
+      name: restaurant.name,
+      displayName: restaurant.displayName,
+      logoUrl: restaurant.logoUrl,
+      taxId: restaurant.taxId || "",
+      branchName: restaurant.branchName || "สำนักงานใหญ่",
+      phone: restaurant.phone || "",
+      address: restaurant.address || "",
+    },
     tableNumbers: tables.map((t) => t.tableNumber),
     items: lineItems,
     // For full/items payments this subtotal (+ service + vat) reconciles exactly
@@ -538,4 +547,37 @@ export async function getReceipt(req, res) {
     paidAt: payment.paidAt,
     createdAt: payment.createdAt,
   });
+}
+
+// POST /api/payment/:id/slip  (public - customer attaches transfer slip image)
+export async function uploadSlip(req, res) {
+  const { slipUrl } = req.body || {};
+  if (!slipUrl) {
+    return res.status(400).json({ error: "กรุณาระบุ URL ของสลิปโอนเงิน" });
+  }
+
+  const payment = await Payment.findById(req.params.id);
+  if (!payment) return res.status(404).json({ error: "ไม่พบรายการชำระเงินนี้" });
+
+  payment.slipUrl = slipUrl;
+  payment.slipUploadedAt = new Date();
+  await payment.save();
+
+  const [restaurant, table] = await Promise.all([
+    Restaurant.findById(payment.restaurantId),
+    Table.findById(payment.tableId).select("tableNumber zone"),
+  ]);
+
+  // Notify staff via Socket.io
+  emitPaymentUpdated(payment.restaurantId, payment);
+
+  // Notify staff via LINE
+  if (restaurant?.lineNotifyToken) {
+    sendLineNotification(
+      restaurant.lineNotifyToken,
+      `\n💰 โต๊ะ ${table?.tableNumber || "-"} แนบสลิปโอนเงิน\nยอด: ฿${payment.amount}\nเวลา: ${new Date().toLocaleTimeString("th-TH")}\nกรุณาตรวจสอบในระบบ`
+    );
+  }
+
+  res.json({ success: true, payment });
 }

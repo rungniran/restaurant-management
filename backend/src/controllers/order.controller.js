@@ -1,6 +1,8 @@
 import Order from "../models/Order.js";
 import MenuItem from "../models/MenuItem.js";
 import Table from "../models/Table.js";
+import Restaurant from "../models/Restaurant.js";
+import { sendLineNotification } from "../services/lineNotify.service.js";
 import { emitNewOrder, emitOrderUpdated, emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff } from "../utils/session.js";
 
@@ -31,16 +33,27 @@ export async function createOrder(req, res) {
   const table = await Table.findOne({ qrToken, isActive: true });
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
 
+  const restaurant = await Restaurant.findById(table.restaurantId);
+
+  // Check buffet expiration
+  if (restaurant?.pricingMode === "buffet") {
+    if (table.buffetExpiresAt && new Date() > new Date(table.buffetExpiresAt)) {
+      return res.status(400).json({ error: "หมดเวลาทานบุฟเฟต์แล้ว ไม่สามารถสั่งอาหารเพิ่มได้" });
+    }
+    if (!table.buffetExpiresAt) {
+      const duration = (restaurant.buffetDurationMinutes || 90) * 60 * 1000;
+      table.buffetExpiresAt = new Date(Date.now() + duration);
+    }
+  }
+
   // First order of a fresh visit: start the new dining session BEFORE creating
   // the order, so its own createdAt can never fall before sessionStartedAt.
-  // (Doing this the other way around — bumping sessionStartedAt after the order
-  // is created — was the bug: the freshly created order's timestamp is always
-  // slightly earlier than "new Date()" called afterward, so it would get
-  // silently filtered out of the customer's own order-status view.)
   const startingNewSession = table.status === "available";
   if (startingNewSession) {
     table.status = "ordering";
     table.sessionStartedAt = new Date();
+  }
+  if (startingNewSession || restaurant?.pricingMode === "buffet") {
     await table.save();
   }
 
@@ -115,6 +128,14 @@ export async function createOrder(req, res) {
 
   const orderWithTable = { ...order.toObject(), tableNumber: table.tableNumber };
   emitNewOrder(table.restaurantId, orderWithTable);
+
+  if (restaurant?.lineNotifyToken) {
+    sendLineNotification(
+      restaurant.lineNotifyToken,
+      `\n🍳 โต๊ะ ${table.tableNumber} สั่งอาหารใหม่ (${order.orderNumber})\nจำนวน: ${items.length} รายการ\nยอด: ฿${subtotal}\nเวลา: ${new Date().toLocaleTimeString("th-TH")}`
+    );
+  }
+
   res.status(201).json(order);
 }
 

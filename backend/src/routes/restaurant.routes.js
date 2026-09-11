@@ -6,6 +6,7 @@ import {
   getSetupStatus,
   getMyRestaurant,
   updateMyRestaurant,
+  testLineNotify,
 } from "../controllers/restaurant.controller.js";
 
 const router = Router();
@@ -15,5 +16,6 @@ router.get("/", listRestaurants);
 router.get("/setup-status", requireAuth, getSetupStatus);
 router.get("/me", requireAuth, getMyRestaurant);
 router.patch("/me", requireAuth, requireRole("owner", "manager"), updateMyRestaurant);
+router.post("/test-line-notify", requireAuth, requireRole("owner", "manager"), testLineNotify);
 
 export default router;

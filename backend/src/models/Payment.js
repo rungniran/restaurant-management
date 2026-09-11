@@ -24,6 +24,8 @@ const paymentSchema = new mongoose.Schema(
     ], // specific order items covered, when splitType=items
 
     receiptNumber: { type: String, default: "" },
+    slipUrl: { type: String, default: "" }, // URL รูปสลิปโอนเงินที่ลูกค้าอัปโหลด
+    slipUploadedAt: Date,
   },
   { timestamps: true }
 );

@@ -6,6 +6,7 @@ export const useTableStore = defineStore("table", {
   state: () => ({
     qrToken: null,
     table: null,
+    restaurant: null,
     restaurantId: null,
     orders: [],
     loading: false,
@@ -30,6 +31,7 @@ export const useTableStore = defineStore("table", {
         const { data } = await api.get(`/table/qr/${qrToken}`);
         this.qrToken = qrToken;
         this.table = data.table;
+        this.restaurant = data.restaurant;
         this.restaurantId = data.table.restaurantId;
         this.orders = data.orders;
         this.connectSocket();

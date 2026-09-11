@@ -1,6 +1,15 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import Table from "../models/Table.js";
+import Restaurant from "../models/Restaurant.js";
+import { sendLineNotification } from "../services/lineNotify.service.js";
 import { emitServiceRequest, emitServiceAcknowledged } from "../sockets/index.js";
+
+const TYPE_LABELS = {
+  call_staff: "เรียกพนักงาน",
+  order_more: "สั่งเพิ่ม",
+  check_bill: "เช็คบิล",
+  water: "ขอน้ำดื่ม",
+};
 
 // POST /api/service-request  (public, customer)
 // body: { qrToken, type, note }
@@ -19,6 +28,17 @@ export async function createServiceRequest(req, res) {
 
   await request.populate("tableId", "tableNumber zone");
   emitServiceRequest(table.restaurantId, request);
+
+  const restaurant = await Restaurant.findById(table.restaurantId);
+  if (restaurant?.lineNotifyToken) {
+    const typeText = TYPE_LABELS[type] || type || "เรียกพนักงาน";
+    const noteText = note ? ` (${note})` : "";
+    sendLineNotification(
+      restaurant.lineNotifyToken,
+      `\n🛎️ โต๊ะ ${table.tableNumber} เรียก: ${typeText}${noteText}\nเวลา: ${new Date().toLocaleTimeString("th-TH")}`
+    );
+  }
+
   res.status(201).json(request);
 }
 

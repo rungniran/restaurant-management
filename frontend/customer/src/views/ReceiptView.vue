@@ -12,28 +12,33 @@
     <main class="receipt-wrap">
       <div class="receipt-paper" id="receipt-paper">
         <div class="r-header">
-          <h2 class="r-shop-name display">{{ receipt.restaurant.name }}</h2>
-          <p class="r-sub">ใบเสร็จอิเล็กทรอนิกส์ / E-Receipt</p>
+          <h2 class="r-shop-name display">{{ receipt.restaurant.displayName || receipt.restaurant.name }}</h2>
+          <p v-if="receipt.restaurant.branchName" class="r-detail">สาขา: {{ receipt.restaurant.branchName }}</p>
+          <p v-if="receipt.restaurant.taxId" class="r-detail">เลขประจำตัวผู้เสียภาษี: {{ receipt.restaurant.taxId }}</p>
+          <p v-if="receipt.restaurant.address" class="r-detail">{{ receipt.restaurant.address }}</p>
+          <p v-if="receipt.restaurant.phone" class="r-detail">โทร: {{ receipt.restaurant.phone }}</p>
+          <p class="r-sub">ใบเสร็จรับเงิน / ใบกำกับภาษีอย่างย่อ</p>
+          <p class="r-sub-en">(Tax Invoice - Abb.)</p>
         </div>
 
         <div class="r-divider" />
 
         <div class="r-meta">
-          <div class="r-meta-row"><span>เลขที่ใบเสร็จ</span><span>{{ receipt.receiptNumber || "-" }}</span></div>
-          <div class="r-meta-row"><span>โต๊ะ</span><span>{{ receipt.tableNumbers.join(", ") }}</span></div>
-          <div class="r-meta-row"><span>วันที่</span><span>{{ formatDate(receipt.paidAt || receipt.createdAt) }}</span></div>
-          <div class="r-meta-row"><span>วิธีชำระ</span><span>{{ methodLabel(receipt.method) }}</span></div>
+          <div class="r-meta-row"><span>เลขที่ใบเสร็จ:</span><span>{{ receipt.receiptNumber || "-" }}</span></div>
+          <div class="r-meta-row"><span>โต๊ะ:</span><span>{{ receipt.tableNumbers.join(", ") }}</span></div>
+          <div class="r-meta-row"><span>วันที่:</span><span>{{ formatDate(receipt.paidAt || receipt.createdAt) }}</span></div>
+          <div class="r-meta-row"><span>วิธีชำระ:</span><span>{{ methodLabel(receipt.method) }}</span></div>
           <div class="r-meta-row">
-            <span>สถานะ</span>
+            <span>สถานะ:</span>
             <span class="chip" :class="receipt.status === 'paid' ? 'chip-done' : 'chip-pending'">
               {{ receipt.status === "paid" ? "ชำระเงินแล้ว" : "รอชำระเงิน" }}
             </span>
           </div>
           <div v-if="receipt.splitType === 'equal'" class="r-meta-row split-note">
-            <span>ส่วนแบ่งบิล</span><span>คนที่ {{ receipt.splitIndex }} / {{ receipt.splitTotal }} คน</span>
+            <span>ส่วนแบ่งบิล:</span><span>คนที่ {{ receipt.splitIndex }} / {{ receipt.splitTotal }} คน</span>
           </div>
           <div v-if="receipt.splitType === 'buffet' && receipt.note" class="r-meta-row split-note">
-            <span>แพ็กเกจ</span><span>{{ receipt.note }}</span>
+            <span>แพ็กเกจ:</span><span>{{ receipt.note }}</span>
           </div>
         </div>
 
@@ -168,11 +173,23 @@ function goBack() {
 .r-shop-name {
   font-size: 19px;
   color: var(--forest-deep);
+  margin-bottom: 4px;
+}
+.r-detail {
+  font-size: 11px;
+  color: #555;
+  margin: 1px 0;
 }
 .r-sub {
-  font-size: 11px;
-  color: #6b7268;
-  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--forest-deep);
+  font-weight: 700;
+  margin: 6px 0 0;
+}
+.r-sub-en {
+  font-size: 10px;
+  color: #777;
+  margin: 0;
 }
 .r-divider {
   border-top: 1.5px solid var(--ink);
@@ -242,16 +259,29 @@ function goBack() {
 .pending-note { max-width: 340px; color: #815900; background: #fff0cf; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
 
 @media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+  body {
+    margin: 0;
+    background: #fff !important;
+  }
   .no-print {
     display: none !important;
   }
   .receipt-wrap {
     padding: 0;
+    width: 80mm;
   }
   .receipt-paper {
     border: none;
-    max-width: 100%;
-    padding: 0;
+    width: 80mm;
+    max-width: 80mm;
+    padding: 6mm 4mm;
+    font-size: 12px;
+    background: #fff;
+    box-shadow: none;
   }
 }
 </style>

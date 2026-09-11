@@ -26,7 +26,9 @@ export async function getTableByToken(req, res) {
     );
   }
 
-  res.json({ table, orders: activeOrders, groupTables });
+  const restaurant = await (await import("../models/Restaurant.js")).default.findById(table.restaurantId);
+
+  res.json({ table, orders: activeOrders, groupTables, restaurant });
 }
 
 // GET /api/table/qr/:qrToken/bill-summary -> public, combined unpaid total across merged group
@@ -115,7 +117,13 @@ export async function updateTableStatus(req, res) {
   const startingNewSession = existing.status === "available" && status && status !== "available";
 
   existing.status = status;
-  if (startingNewSession) existing.sessionStartedAt = new Date();
+  if (startingNewSession) {
+    existing.sessionStartedAt = new Date();
+    existing.buffetExpiresAt = null;
+  }
+  if (status === "available") {
+    existing.buffetExpiresAt = null;
+  }
   await existing.save();
 
   emitTableStatus(existing.restaurantId, existing);
@@ -147,6 +155,7 @@ export async function releaseTable(req, res) {
   table.status = "available";
   table.groupId = null;
   table.isGroupPrimary = false;
+  table.buffetExpiresAt = null;
   // Close out this dining session: anything before "now" belongs to the customer
   // who just left, so the next party scanning this table's QR starts with a clean slate.
   table.sessionStartedAt = new Date();

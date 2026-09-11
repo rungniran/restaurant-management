@@ -567,4 +567,87 @@ h2 {
 .file-input-label i {
   margin: 0;
 }
+
+/* Option Groups Builder */
+.option-groups-section {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option-groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-group-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.option-group-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.option-group-name {
+  flex: 2;
+  min-width: 140px;
+}
+.option-type-select {
+  flex: 1;
+  min-width: 130px;
+}
+.required-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
+.choice-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.choice-row input {
+  flex: 1;
+}
+.extra-price-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.extra-price-input {
+  width: 70px !important;
+}
+.btn-icon-remove {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+.add-choice-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 12px;
+}
 </style>

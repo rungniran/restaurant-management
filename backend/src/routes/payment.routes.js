@@ -10,6 +10,7 @@ import {
   closeTable,
   getPaymentHistory,
   getReceipt,
+  uploadSlip,
 } from "../controllers/payment.controller.js";
 
 const router = Router();
@@ -20,6 +21,7 @@ router.post("/split", createSplitPayment);
 router.post("/buffet", createBuffetPayment);
 router.get("/table/:qrToken", getPaymentByTable);
 router.get("/:id/receipt", getReceipt);
+router.post("/:id/slip", uploadSlip);
 
 // gateway callback (no staff auth - verify signature in production)
 router.post("/webhook", paymentWebhook);

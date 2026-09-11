@@ -62,7 +62,7 @@
       </div>
 
       <div class="wizard-card card">
-        <h3>ตั้งค่าร้านของคุณ</h3>
+        <h3>ตั้งค่าร้านและระบบภาษี/บุฟเฟต์</h3>
         <div class="form-grid">
           <div>
             <label>ชื่อร้าน</label>
@@ -80,8 +80,50 @@
             <label>โลโก้ URL</label>
             <input v-model="form.logoUrl" placeholder="https://..." />
           </div>
+          <div>
+            <label>เลขประจำตัวผู้เสียภาษี (TAX ID 13 หลัก)</label>
+            <input v-model="form.taxId" placeholder="เช่น 0105559123456" />
+          </div>
+          <div>
+            <label>ชื่อสาขา</label>
+            <input v-model="form.branchName" placeholder="เช่น สำนักงานใหญ่ หรือ สาขา 1" />
+          </div>
+          <div>
+            <label>VAT (%)</label>
+            <input v-model.number="form.vatPercent" type="number" min="0" max="100" placeholder="7" />
+          </div>
+          <div>
+            <label>Service Charge (%)</label>
+            <input v-model.number="form.serviceChargePercent" type="number" min="0" max="100" placeholder="10" />
+          </div>
+          <div>
+            <label>รูปแบบการขาย</label>
+            <select v-model="form.pricingMode">
+              <option value="normal">ขายตามสั่งปกติ (A La Carte)</option>
+              <option value="buffet">บุฟเฟต์ (Buffet)</option>
+            </select>
+          </div>
+          <template v-if="form.pricingMode === 'buffet'">
+            <div>
+              <label>ราคาบุฟเฟต์ต่อท่าน (บาท)</label>
+              <input v-model.number="form.buffetPricePerPerson" type="number" min="0" placeholder="เช่น 299" />
+            </div>
+            <div>
+              <label>ระยะเวลากินบุฟเฟต์ (นาที)</label>
+              <input v-model.number="form.buffetDurationMinutes" type="number" min="15" placeholder="เช่น 90" />
+            </div>
+          </template>
           <div class="full-width">
-            <label>ที่อยู่</label>
+            <label>LINE Notify Token (สำหรับแจ้งเตือนพนักงานเข้ากลุ่ม LINE)</label>
+            <div class="line-input-wrap">
+              <input v-model="form.lineNotifyToken" placeholder="วาง LINE Notify Token ที่นี่" />
+              <button type="button" class="btn small btn-line" :disabled="testingLine" @click="testLine">
+                <i class="fa-solid fa-bell"></i> {{ testingLine ? "กำลังทดสอบ..." : "ทดสอบส่ง LINE" }}
+              </button>
+            </div>
+          </div>
+          <div class="full-width">
+            <label>ที่อยู่ร้าน (แสดงในใบกำกับภาษีอย่างย่อ)</label>
             <textarea v-model="form.address" rows="3" placeholder="ที่อยู่ร้าน"></textarea>
           </div>
         </div>
@@ -102,6 +144,7 @@ import api from "../api/client";
 
 const router = useRouter();
 const loading = ref(false);
+const testingLine = ref(false);
 const restaurant = ref(null);
 const progress = ref(0);
 const steps = ref([]);
@@ -112,6 +155,14 @@ const form = ref({
   phone: "",
   address: "",
   logoUrl: "",
+  taxId: "",
+  branchName: "สำนักงานใหญ่",
+  vatPercent: 7,
+  serviceChargePercent: 0,
+  pricingMode: "normal",
+  buffetPricePerPerson: 0,
+  buffetDurationMinutes: 90,
+  lineNotifyToken: "",
 });
 
 const setupHrefMap = {
@@ -126,10 +177,13 @@ const setupHrefMap = {
 async function fetchSetupStatus() {
   loading.value = true;
   try {
-    const { data } = await api.get("/restaurant/setup-status");
-    restaurant.value = data.restaurant;
-    steps.value = data.steps || [];
-    progress.value = data.progress || 0;
+    const [{ data: statusData }, { data: meData }] = await Promise.all([
+      api.get("/restaurant/setup-status"),
+      api.get("/restaurant/me"),
+    ]);
+    restaurant.value = meData || statusData.restaurant;
+    steps.value = statusData.steps || [];
+    progress.value = statusData.progress || 0;
     if (restaurant.value) {
       form.value = {
         name: restaurant.value.name || "",
@@ -137,12 +191,38 @@ async function fetchSetupStatus() {
         phone: restaurant.value.phone || "",
         address: restaurant.value.address || "",
         logoUrl: restaurant.value.logoUrl || "",
+        taxId: restaurant.value.taxId || "",
+        branchName: restaurant.value.branchName || "สำนักงานใหญ่",
+        vatPercent: Number(restaurant.value.vatPercent || 0),
+        serviceChargePercent: Number(restaurant.value.serviceChargePercent || 0),
+        pricingMode: restaurant.value.pricingMode || "normal",
+        buffetPricePerPerson: Number(restaurant.value.buffetPricePerPerson || 0),
+        buffetDurationMinutes: Number(restaurant.value.buffetDurationMinutes || 90),
+        lineNotifyToken: restaurant.value.lineNotifyToken || "",
       };
     }
   } catch (err) {
     console.error("Setup status load failed", err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function testLine() {
+  if (!form.value.lineNotifyToken) {
+    alert("กรุณากรอก LINE Notify Token ก่อนทดสอบ");
+    return;
+  }
+  testingLine.value = true;
+  try {
+    const { data } = await api.post("/restaurant/test-line-notify", {
+      lineNotifyToken: form.value.lineNotifyToken,
+    });
+    alert(data.message || "ส่งข้อความทดสอบสำเร็จ");
+  } catch (err) {
+    alert(err.response?.data?.error || "ส่งข้อความทดสอบไม่สำเร็จ กรุณาตรวจสอบ Token");
+  } finally {
+    testingLine.value = false;
   }
 }
 
@@ -371,6 +451,7 @@ label {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   background: var(--panel-2);
@@ -379,6 +460,37 @@ textarea {
   border-radius: 8px;
   padding: 10px 12px;
   resize: vertical;
+}
+
+select {
+  cursor: pointer;
+}
+
+.line-input-wrap {
+  display: flex;
+  gap: 8px;
+}
+.line-input-wrap input {
+  flex: 1;
+}
+.btn-line {
+  background: #00b900;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-line:hover {
+  background: #009900;
+}
+.btn-line:disabled {
+  opacity: 0.6;
 }
 
 textarea {

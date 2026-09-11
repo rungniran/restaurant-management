@@ -21,6 +21,9 @@ const tableSchema = new mongoose.Schema(
     // are billed together. isGroupPrimary marks the "main" table of the group.
     groupId: { type: String, default: null },
     isGroupPrimary: { type: Boolean, default: false },
+
+    // เวลาหมดเวลากินบุฟเฟต์สำหรับโต๊ะนี้
+    buffetExpiresAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

@@ -119,6 +119,28 @@
               </button>
             </div>
             <p v-if="copiedMsg" class="copied-msg">{{ copiedMsg }}</p>
+
+            <!-- Slip Upload Box -->
+            <div class="slip-box">
+              <div v-if="p.slipUrl" class="slip-preview">
+                <img :src="p.slipUrl" alt="สลิปโอนเงิน" class="slip-img" />
+                <span class="slip-badge">
+                  <i class="fa-solid fa-circle-check"></i> แนบสลิปแล้ว กำลังรอพนักงานตรวจสอบ
+                </span>
+              </div>
+              <div v-else class="slip-upload-btn-wrap">
+                <label class="slip-btn" :class="{ disabled: uploadingSlip[p._id] }">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    @change="(e) => handleSlipUpload(e, p)"
+                    :disabled="uploadingSlip[p._id]"
+                  />
+                  <i class="fa-solid fa-receipt"></i>
+                  {{ uploadingSlip[p._id] ? "กำลังอัปโหลดสลิป..." : "แนบสลิปโอนเงิน" }}
+                </label>
+              </div>
+            </div>
           </template>
           <p v-else class="paid-check">✅ ชำระเงินแล้ว</p>
 
@@ -379,6 +401,34 @@ async function copyAmount(amount) {
     setTimeout(() => (copiedMsg.value = ""), 3000);
   }
 }
+
+const uploadingSlip = ref({});
+
+async function handleSlipUpload(event, payment) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  uploadingSlip.value[payment._id] = true;
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const { data: uploadRes } = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    if (uploadRes.url) {
+      await api.post(`/payment/${payment._id}/slip`, { slipUrl: uploadRes.url });
+      payment.slipUrl = uploadRes.url;
+    }
+  } catch (err) {
+    console.error("Slip upload failed:", err);
+    alert("อัปโหลดสลิปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+  } finally {
+    uploadingSlip.value[payment._id] = false;
+    event.target.value = "";
+  }
+}
 </script>
 
 <style scoped>
@@ -587,5 +637,58 @@ async function copyAmount(amount) {
   color: var(--forest);
   font-weight: 600;
   margin: 4px 0;
+}
+.slip-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d5d0c8;
+}
+.slip-upload-btn-wrap {
+  display: flex;
+  justify-content: center;
+}
+.slip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--forest);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.slip-btn.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.slip-btn input {
+  display: none;
+}
+.slip-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.slip-img {
+  max-width: 140px;
+  max-height: 180px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  object-fit: contain;
+}
+.slip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--forest);
+  background: rgba(46, 117, 89, 0.12);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
 }
 </style>

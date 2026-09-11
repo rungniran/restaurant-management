@@ -16,6 +16,26 @@
       </button>
     </header>
 
+    <!-- Buffet Timer Banner -->
+    <div
+      v-if="isBuffet"
+      class="buffet-timer-bar"
+      :class="{
+        'buffet-warning': buffetRemainingSeconds > 0 && buffetRemainingSeconds <= 900,
+        'buffet-expired': isBuffetExpired,
+      }"
+    >
+      <i class="fa-solid fa-clock"></i>
+      <span v-if="!buffetStarted">บุฟเฟต์: เริ่มนับเวลาเมื่อสั่งออเดอร์แรก ({{ tableStore.restaurant?.buffetDurationMinutes || 90 }} นาที)</span>
+      <span v-else-if="buffetRemainingSeconds > 0">
+        เวลาทานบุฟเฟต์คงเหลือ: <strong>{{ formatCountdown(buffetRemainingSeconds) }}</strong>
+        <span v-if="buffetRemainingSeconds <= 900" class="buffet-warning-tag">(ใกล้หมดเวลาสั่ง)</span>
+      </span>
+      <span v-else>
+        <strong>⛔ หมดเวลาสั่งอาหารบุฟเฟต์แล้ว</strong>
+      </span>
+    </div>
+
     <div class="search-wrap">
       <i class="fa-solid fa-magnifying-glass search-icon"></i>
       <input v-model="search" type="text" placeholder="ค้นหาเมนูโปรดของคุณ..." class="search-input" />
@@ -91,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useTableStore } from "../stores/table";
 import { useCartStore } from "../stores/cart";
@@ -108,6 +128,34 @@ const activeCat = ref(null);
 const callingStaff = ref(false);
 const callStaffMessage = ref("");
 
+const isBuffet = computed(() => tableStore.restaurant?.pricingMode === "buffet");
+const buffetStarted = computed(() => !!tableStore.table?.buffetExpiresAt);
+const buffetRemainingSeconds = ref(0);
+let timerInterval = null;
+
+function updateBuffetTimer() {
+  if (!tableStore.table?.buffetExpiresAt) {
+    buffetRemainingSeconds.value = 0;
+    return;
+  }
+  const diff = Math.floor((new Date(tableStore.table.buffetExpiresAt).getTime() - Date.now()) / 1000);
+  buffetRemainingSeconds.value = Math.max(0, diff);
+}
+
+function formatCountdown(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) {
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+const isBuffetExpired = computed(
+  () => isBuffet.value && buffetStarted.value && buffetRemainingSeconds.value <= 0
+);
+
 const filteredCategories = computed(() => {
   if (!search.value.trim()) return cartStore.categories;
   const q = search.value.trim().toLowerCase();
@@ -122,6 +170,12 @@ onMounted(async () => {
     await cartStore.loadMenu(tableStore.restaurantId, props.qrToken);
     activeCat.value = cartStore.categories[0]?._id;
   }
+  updateBuffetTimer();
+  timerInterval = setInterval(updateBuffetTimer, 1000);
+});
+
+onUnmounted(() => {
+  clearInterval(timerInterval);
 });
 
 function scrollTo(catId) {
@@ -131,6 +185,10 @@ function scrollTo(catId) {
 
 function openItem(item) {
   if (!item.isAvailable) return;
+  if (isBuffetExpired.value) {
+    alert("หมดเวลาสั่งอาหารบุฟเฟต์แล้ว");
+    return;
+  }
   if (!item.options?.length) {
     quickAdd(item);
     return;
@@ -145,6 +203,10 @@ function qtyInCart(item) {
 }
 
 function quickAdd(item) {
+  if (isBuffetExpired.value) {
+    alert("หมดเวลาสั่งอาหารบุฟเฟต์แล้ว");
+    return;
+  }
   const existing = cartStore.cart.find(
     (l) => l.menuItem._id === item._id && (!l.selectedOptions || l.selectedOptions.length === 0)
   );
@@ -420,5 +482,30 @@ function goStatus() {
   font-size: 28px;
   margin-bottom: 10px;
   display: block;
+}
+
+/* Buffet Timer Banner */
+.buffet-timer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--forest);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+.buffet-timer-bar.buffet-warning {
+  background: #d35400;
+}
+.buffet-timer-bar.buffet-expired {
+  background: #c0392b;
+}
+.buffet-warning-tag {
+  color: #ffeaa7;
+  font-weight: 700;
+  margin-left: 4px;
 }
 </style>

@@ -4,6 +4,7 @@ const staffSchema = new mongoose.Schema(
   {
     restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: "Restaurant", required: true },
     name: { type: String, required: true },
+    avatarUrl: { type: String, default: "" },
     email: { type: String, default: "" },
     username: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },

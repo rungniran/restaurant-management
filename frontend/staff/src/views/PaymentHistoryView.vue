@@ -4,6 +4,33 @@
       <h2 class="display">ประวัติการชำระเงิน</h2>
     </header>
 
+    <form class="manual-payment card" @submit.prevent="submitManualPayment">
+      <div class="manual-payment-title">
+        <i class="fa-solid fa-cash-register"></i>
+        <strong>รับเงินสด / บัตรที่หน้าเคาน์เตอร์</strong>
+      </div>
+      <div class="manual-payment-fields">
+        <label>
+          เลขโต๊ะ
+          <input v-model.trim="manualPayment.tableNumber" required placeholder="เช่น  A01" />
+        </label>
+        <label>
+          วิธีชำระ
+          <select v-model="manualPayment.method">
+            <option value="cash">เงินสด</option>
+            <option value="card">บัตร</option>
+          </select>
+        </label>
+        <label>
+          จำนวนคน (บุฟเฟต์)
+          <input v-model.number="manualPayment.headCount" type="number" min="1" placeholder="ไม่ต้องกรอกถ้าไม่ใช่บุฟเฟต์" />
+        </label>
+        <button class="btn btn-accent" type="submit" :disabled="payments.manualSaving">
+          {{ payments.manualSaving ? "กำลังบันทึก..." : "บันทึกการรับเงิน" }}
+        </button>
+      </div>
+    </form>
+
     <div class="filters card">
       <div class="filter-field">
         <label>สถานะ</label>
@@ -127,6 +154,7 @@ import { usePaymentsStore } from "../stores/payments";
 
 const payments = usePaymentsStore();
 const activeSlip = ref(null);
+const manualPayment = ref({ tableNumber: "", method: "cash", headCount: null });
 
 onMounted(() => payments.loadHistory());
 
@@ -157,6 +185,14 @@ async function confirmFromModal() {
   await payments.confirmPayment(activeSlip.value._id);
   activeSlip.value = null;
 }
+async function submitManualPayment() {
+  const success = await payments.createManualPayment({
+    tableNumber: manualPayment.value.tableNumber,
+    method: manualPayment.value.method,
+    ...(manualPayment.value.headCount ? { headCount: manualPayment.value.headCount } : {}),
+  });
+  if (success) manualPayment.value = { tableNumber: "", method: "cash", headCount: null };
+}
 </script>
 
 <style scoped>
@@ -164,6 +200,41 @@ h2 {
   font-size: 22px;
   color: var(--accent);
   margin-bottom: 20px;
+}
+.manual-payment {
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.manual-payment-title {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.manual-payment-fields {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.manual-payment-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.manual-payment-fields input,
+.manual-payment-fields select {
+  min-width: 150px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
 }
 .filters {
   display: flex;

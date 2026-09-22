@@ -6,6 +6,7 @@ export const usePaymentsStore = defineStore("payments", {
     payments: [],
     loading: false,
     confirmingId: null,
+    manualSaving: false,
     error: null,
     filters: { status: "", method: "", from: "", to: "" },
   }),
@@ -42,6 +43,21 @@ export const usePaymentsStore = defineStore("payments", {
         return false;
       } finally {
         this.confirmingId = null;
+      }
+    },
+
+    async createManualPayment(payload) {
+      this.manualSaving = true;
+      this.error = null;
+      try {
+        const { data } = await api.post("/payment/manual", payload);
+        this.payments.unshift(data);
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || "บันทึกการชำระเงินไม่สำเร็จ";
+        return false;
+      } finally {
+        this.manualSaving = false;
       }
     },
   },

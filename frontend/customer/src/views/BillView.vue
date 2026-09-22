@@ -16,24 +16,30 @@
         </div>
 
         <div class="total-preview card">
-          <div>
-            <span>ค่าอาหาร ฿{{ billSummary.subtotal || 0 }}</span>
-            <small v-if="billSummary.serviceCharge || billSummary.vat">
-              ค่าบริการ ฿{{ billSummary.serviceCharge || 0 }} · VAT ฿{{ billSummary.vat || 0 }}
-            </small>
+          <div v-if="billSummary.buffetEnabled">
+            <span>บุฟเฟต์รายหัว</span>
+            <small>ราคา {{ billSummary.buffetPricePerPerson }} บาท / คน</small>
           </div>
-          <strong>฿{{ billSummary.total || 0 }}</strong>
+          <template v-else>
+            <div>
+              <span>ค่าอาหาร ฿{{ billSummary.subtotal || 0 }}</span>
+              <small v-if="billSummary.serviceCharge || billSummary.vat">
+                ค่าบริการ ฿{{ billSummary.serviceCharge || 0 }} · VAT ฿{{ billSummary.vat || 0 }}
+              </small>
+            </div>
+            <strong>฿{{ billSummary.total || 0 }}</strong>
+          </template>
         </div>
 
         <div class="mode-tabs">
-          <button class="mode-tab" :class="{ active: mode === 'full' }" @click="mode = 'full'">จ่ายเต็มบิล</button>
-          <button class="mode-tab" :class="{ active: mode === 'equal' }" @click="mode = 'equal'">หารเท่ากัน</button>
+          <button v-if="!billSummary.buffetEnabled" class="mode-tab" :class="{ active: mode === 'full' }" @click="mode = 'full'">จ่ายเต็มบิล</button>
+          <button v-if="!billSummary.buffetEnabled" class="mode-tab" :class="{ active: mode === 'equal' }" @click="mode = 'equal'">หารเท่ากัน</button>
           <button v-if="billSummary.buffetEnabled" class="mode-tab" :class="{ active: mode === 'buffet' }" @click="mode = 'buffet'">บุฟเฟ่ต์รายหัว</button>
-          <button class="mode-tab" :class="{ active: mode === 'items' }" @click="mode = 'items'">เลือกจ่ายรายการ</button>
+          <button v-if="!billSummary.buffetEnabled" class="mode-tab" :class="{ active: mode === 'items' }" @click="mode = 'items'">เลือกจ่ายรายการ</button>
         </div>
 
         <!-- full bill -->
-        <div v-if="mode === 'full'" class="mode-panel card">
+        <div v-if="!billSummary.buffetEnabled && mode === 'full'" class="mode-panel card">
           <p class="mode-desc">ชำระค่าอาหารทั้งหมดในบิลนี้ในครั้งเดียว</p>
           <button class="btn-primary full-w" :disabled="requesting" @click="payFull">
             {{ requesting ? "กำลังสร้าง QR..." : `ขอ QR ชำระเต็มบิล · ฿${billSummary.total || 0}` }}
@@ -41,7 +47,7 @@
         </div>
 
         <!-- split evenly -->
-        <div v-if="mode === 'equal'" class="mode-panel card">
+        <div v-if="!billSummary.buffetEnabled && mode === 'equal'" class="mode-panel card">
           <p class="mode-desc">หารยอดรวมเท่าๆ กันตามจำนวนคน แต่ละคนจะได้ QR ของตัวเอง</p>
           <div class="split-count-row">
             <button @click="splitCount = Math.max(2, splitCount - 1)">−</button>
@@ -55,7 +61,7 @@
         </div>
 
         <!-- buffet per head -->
-        <div v-if="mode === 'buffet'" class="mode-panel card">
+        <div v-if="billSummary.buffetEnabled && mode === 'buffet'" class="mode-panel card">
           <p class="mode-desc">ชำระแบบบุฟเฟ่ต์รายหัว ราคาต่อคน {{ billSummary.buffetPricePerPerson }} บาท</p>
           <div class="split-count-row">
             <button @click="buffetHeadCount = Math.max(1, buffetHeadCount - 1)">−</button>
@@ -69,7 +75,7 @@
         </div>
 
         <!-- split by items -->
-        <div v-if="mode === 'items'" class="mode-panel card">
+        <div v-if="!billSummary.buffetEnabled && mode === 'items'" class="mode-panel card">
           <p class="mode-desc">เลือกเฉพาะรายการที่ต้องการจ่าย (เหมาะกับการแยกจ่ายตามคนสั่ง)</p>
           <div v-for="order in billSummary.orders" :key="order._id" class="pick-order">
             <div class="pick-order-num">#{{ order.orderNumber }}</div>
@@ -219,6 +225,7 @@ async function loadSummary() {
   try {
     const { data } = await api.get(`/table/qr/${props.qrToken}/bill-summary`);
     billSummary.value = data;
+    mode.value = data.buffetEnabled ? "buffet" : "full";
   } catch (err) {
     error.value = "โหลดยอดบิลไม่สำเร็จ";
   } finally {

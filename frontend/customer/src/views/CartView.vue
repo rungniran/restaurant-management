@@ -31,19 +31,27 @@
             <span>{{ line.quantity }}</span>
             <button @click="cartStore.updateQuantity(line.lineId, line.quantity + 1)">+</button>
           </div>
-          <div class="line-price">฿{{ lineTotal(line) }}</div>
+          <div v-if="!isBuffet" class="line-price">฿{{ lineTotal(line) }}</div>
+          <div v-else class="line-price buffet-line-price">รวมในบุฟเฟต์</div>
           <button class="remove-btn" @click="cartStore.removeFromCart(line.lineId)">
             <i class="fa-solid fa-trash"></i> ลบ
           </button>
         </div>
       </div>
 
-      <div class="summary card">
+      <div v-if="!isBuffet" class="summary card">
         <div class="summary-row">
           <span>ยอดรวม</span>
           <span>฿{{ cartStore.cartTotal }}</span>
         </div>
         <p class="summary-note">* ค่าบริการและภาษีจะคำนวณตอนเช็คบิล</p>
+      </div>
+      <div v-else class="summary card buffet-summary">
+        <div class="summary-row">
+          <span>รายการบุฟเฟต์</span>
+          <span>รวมในราคาเหมาจ่าย</span>
+        </div>
+        <p class="summary-note">จำนวนคนและยอดชำระจะระบุในขั้นตอนเช็กบิล</p>
       </div>
 
       <p v-if="cartStore.error" class="error-text">{{ cartStore.error }}</p>
@@ -63,25 +71,30 @@
 
   <div v-if="cartStore.cart.length > 0" class="bottom-nav">
     <button class="btn-primary" style="flex:1" :disabled="cartStore.submitting" @click="submit">
-      {{ cartStore.submitting ? "กำลังส่งออเดอร์..." : `ยืนยันสั่งอาหาร · ฿${cartStore.cartTotal}` }}
+      {{ cartStore.submitting ? "กำลังส่งออเดอร์..." : isBuffet ? "ยืนยันสั่งอาหาร" : `ยืนยันสั่งอาหาร · ฿${cartStore.cartTotal}` }}
     </button>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore, lineTotal } from "../stores/cart";
+import { useTableStore } from "../stores/table";
 import ItemOptionsSheet from "../components/ItemOptionsSheet.vue";
 
 const props = defineProps({ qrToken: String });
 const router = useRouter();
 const cartStore = useCartStore();
+const tableStore = useTableStore();
+
+const isBuffet = computed(() => tableStore.restaurant?.pricingMode === "buffet");
 
 const editingLine = ref(null);
 
-onMounted(() => {
+onMounted(async () => {
   cartStore.initCart(props.qrToken);
+  if (!tableStore.table) await tableStore.loadTable(props.qrToken);
 });
 
 function editLine(line) {
@@ -180,6 +193,10 @@ async function submit() {
   font-size: 13.5px;
   align-self: flex-end;
 }
+.buffet-line-price {
+  color: var(--forest);
+  font-size: 12px;
+}
 .remove-btn {
   background: #fdeceb;
   color: var(--chili);
@@ -210,6 +227,9 @@ async function submit() {
   color: #6b7268;
   margin: 6px 0 0;
 }
+.buffet-summary .summary-row {
+  font-size: 14px;
+}
 .error-text {
   color: var(--chili);
   font-size: 13px;
@@ -228,5 +248,24 @@ async function submit() {
   align-items: center;
   gap: 4px;
   cursor: pointer;
+}
+@media (max-width: 380px) {
+  .cart-line {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .line-side {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .qty-control,
+  .line-price {
+    justify-self: start;
+  }
+  .remove-btn {
+    grid-column: 1 / -1;
+  }
 }
 </style>

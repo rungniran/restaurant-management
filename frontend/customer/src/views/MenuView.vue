@@ -57,13 +57,17 @@
       <section v-for="cat in filteredCategories" :key="cat._id" :id="`cat-${cat._id}`" class="cat-section">
         <h2 class="cat-title">{{ cat.name }}</h2>
         <div class="items-grid">
-          <button
+          <div
             v-for="item in cat.items"
             :key="item._id"
             class="item-card"
             :class="{ disabled: !item.isAvailable }"
-            :disabled="!item.isAvailable"
+            :aria-disabled="!item.isAvailable"
+            role="button"
+            tabindex="0"
             @click="openItem(item)"
+            @keydown.enter="openItem(item)"
+            @keydown.space.prevent="openItem(item)"
           >
             <div class="item-img" v-if="item.imageUrl">
               <img :src="item.imageUrl" :alt="item.name" />
@@ -73,7 +77,8 @@
               <div class="item-name">{{ item.name }}</div>
               <div class="item-desc">{{ item.description }}</div>
               <div class="item-price-row">
-                <span class="item-price">฿{{ item.price }}</span>
+                <span v-if="!isBuffet" class="item-price">฿{{ item.price }}</span>
+                <span v-else class="buffet-included">รวมในบุฟเฟต์</span>
                 <span v-if="!item.isAvailable" class="chip chip-cancelled">หมด</span>
                 <template v-else-if="!item.options?.length">
                   <span v-if="qtyInCart(item) === 0" class="quick-add" @click.stop="quickAdd(item)"><i class="fa-solid fa-plus"></i> เพิ่ม</span>
@@ -85,7 +90,7 @@
                 </template>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </section>
 
@@ -95,7 +100,13 @@
       </div>
     </main>
 
-    <ItemOptionsSheet v-if="selectedItem" :item="selectedItem" @close="selectedItem = null" @add="onAdd" />
+    <ItemOptionsSheet
+      v-if="selectedItem"
+      :item="selectedItem"
+      :is-buffet="isBuffet"
+      @close="selectedItem = null"
+      @add="onAdd"
+    />
 
     <div class="bottom-nav">
       <button class="btn-secondary" style="flex:1" @click="goStatus">
@@ -294,8 +305,11 @@ function goStatus() {
   background: #f9d8c6;
 }
 .search-wrap {
-  position: relative;
+  position: sticky;
+  top: 64px;
+  z-index: 15;
   padding: 16px 18px 14px;
+  background: var(--paper);
 }
 .search-icon {
   position: absolute;
@@ -326,13 +340,16 @@ function goStatus() {
   background: var(--paper);
 }
 .cat-tabs {
-  position: static;
+  position: sticky;
+  top: 128px;
+  z-index: 14;
   background: var(--paper);
   display: flex;
   gap: 18px;
   overflow-x: auto;
   padding: 0 18px 2px;
   border-bottom: 1px solid var(--line);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
 .cat-tab {
   background: none;
@@ -380,6 +397,10 @@ function goStatus() {
   align-items: flex-start;
   box-shadow: none;
   transition: border-color 0.15s var(--ease), transform 0.1s var(--ease);
+}
+.item-card:focus-visible {
+  outline: 2px solid var(--marigold-deep);
+  outline-offset: 2px;
 }
 .item-card:not(.disabled):active {
   transform: scale(0.99);
@@ -435,6 +456,11 @@ function goStatus() {
   color: var(--ink);
   font-weight: 700;
   font-size: 14px;
+}
+.buffet-included {
+  color: var(--forest);
+  font-size: 12px;
+  font-weight: 700;
 }
 .quick-add {
   background: var(--marigold-light);

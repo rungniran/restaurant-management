@@ -13,12 +13,16 @@
     <div class="list">
       <div v-for="s in staffStore.list" :key="s._id" class="staff-card card" :class="{ inactive: !s.isActive }">
         <div class="staff-top">
-          <div>
+          <div class="staff-identity">
+            <img v-if="s.avatarUrl" :src="s.avatarUrl" :alt="s.name" class="staff-avatar" />
+            <div v-else class="staff-avatar staff-avatar-fallback"><i class="fa-solid fa-user"></i></div>
+            <div>
             <div class="staff-name">
               {{ s.name }}
               <span v-if="s._id === auth.staff?.id" class="you-tag">คุณ</span>
             </div>
             <div class="staff-meta">@{{ s.username }}</div>
+            </div>
           </div>
           <span class="chip" :class="`role-${s.role}`">{{ roleLabel(s.role) }}</span>
         </div>
@@ -216,6 +220,26 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+.staff-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.staff-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--line);
+}
+.staff-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2);
+  color: var(--muted);
 }
 .staff-name {
   font-weight: 700;

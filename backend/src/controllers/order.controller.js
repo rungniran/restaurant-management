@@ -34,9 +34,13 @@ export async function createOrder(req, res) {
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
 
   const restaurant = await Restaurant.findById(table.restaurantId);
+  if (!restaurant) return res.status(404).json({ error: "ไม่พบร้านนี้" });
+  if (!restaurant.isOpen) {
+    return res.status(409).json({ error: "ร้านปิดอยู่ ยังไม่สามารถรับออเดอร์ได้" });
+  }
 
   // Check buffet expiration
-  if (restaurant?.pricingMode === "buffet") {
+  if (restaurant.pricingMode === "buffet") {
     if (table.buffetExpiresAt && new Date() > new Date(table.buffetExpiresAt)) {
       return res.status(400).json({ error: "หมดเวลาทานบุฟเฟต์แล้ว ไม่สามารถสั่งอาหารเพิ่มได้" });
     }

@@ -4,6 +4,7 @@ import {
   createPromptPayPayment,
   createSplitPayment,
   createBuffetPayment,
+  createManualPayment,
   confirmPayment,
   paymentWebhook,
   getPaymentByTable,
@@ -27,6 +28,7 @@ router.post("/:id/slip", uploadSlip);
 router.post("/webhook", paymentWebhook);
 
 // staff/cashier
+router.post("/manual", requireAuth, requireRole("owner", "manager", "cashier"), createManualPayment);
 router.get("/history", requireAuth, requireRole("owner", "manager", "cashier"), getPaymentHistory);
 router.post("/:id/confirm", requireAuth, requireRole("owner", "manager", "cashier"), confirmPayment);
 router.post("/:id/close-table", requireAuth, requireRole("owner", "manager", "cashier", "waiter"), closeTable);

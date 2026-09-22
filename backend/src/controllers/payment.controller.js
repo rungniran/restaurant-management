@@ -330,6 +330,77 @@ export async function createBuffetPayment(req, res) {
   });
 }
 
+// POST /api/payment/manual (staff/cashier)
+// Records a cash or card payment using the server-calculated table total.
+export async function createManualPayment(req, res) {
+  const { tableNumber, method, headCount } = req.body;
+  if (!tableNumber || !["cash", "card"].includes(method)) {
+    return res.status(400).json({ error: "กรุณาระบุโต๊ะและวิธีชำระเป็นเงินสดหรือบัตร" });
+  }
+
+  const table = await Table.findOne({ tableNumber: String(tableNumber).trim(), restaurantId: req.staff.restaurantId, isActive: true });
+  if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้ในร้านของคุณ" });
+
+  const restaurant = await Restaurant.findById(req.staff.restaurantId);
+  const groupTables = await resolveGroupTables(table);
+  const groupTableIds = groupTables.map((groupTable) => groupTable._id);
+
+  try {
+    await ensureCheckoutAvailable(table, groupTables, "full");
+  } catch (error) {
+    return sendPaymentConflict(res, error);
+  }
+
+  const orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
+  const isBuffet = restaurant?.pricingMode === "buffet";
+  const guests = Number(headCount);
+  let amount;
+  let splitType = "full";
+  let note = "";
+
+  if (isBuffet && (!Number.isInteger(guests) || guests < 1 || guests > 50)) {
+    return res.status(400).json({ error: "กรุณาระบุจำนวนผู้ใหญ่/ผู้ทานบุฟเฟต์ 1-50 คน" });
+  }
+
+  if (isBuffet) {
+    amount = +(restaurant.buffetPricePerPerson * guests).toFixed(2);
+    splitType = "buffet";
+    note = `บุฟเฟ่ต์รายหัว ${guests} คน`;
+  } else {
+    if (orders.length === 0) return res.status(400).json({ error: "โต๊ะนี้ยังไม่มีออเดอร์สำหรับชำระเงิน" });
+    amount = (await computeAmount({ orders, restaurant })).amount;
+  }
+
+  if (!amount || amount <= 0) return res.status(400).json({ error: "ยอดชำระต้องมากกว่า 0" });
+
+  const payment = await Payment.create({
+    restaurantId: req.staff.restaurantId,
+    tableId: table._id,
+    tableIds: groupTableIds,
+    orderIds: orders.map((order) => order._id),
+    amount,
+    method,
+    status: "paid",
+    splitType,
+    splitIndex: 1,
+    splitTotal: 1,
+    receiptNumber: receiptNumber(),
+    note,
+    paidAt: new Date(),
+  });
+
+  const fullyPaid = await markOrdersPaidIfComplete(payment);
+  if (fullyPaid) {
+    for (const groupTable of groupTables) {
+      groupTable.status = "cleaning";
+      await groupTable.save();
+      emitTableStatus(groupTable.restaurantId, groupTable);
+    }
+  }
+  emitPaymentUpdated(payment.restaurantId, payment);
+  res.status(201).json(payment);
+}
+
 // POST /api/payment/:id/confirm  (staff/cashier marks as paid manually, or webhook calls this)
 export async function confirmPayment(req, res) {
   // Scope the lookup to the authenticated staff member's restaurant. Object IDs

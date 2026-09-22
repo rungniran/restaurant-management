@@ -10,7 +10,9 @@
         <button class="close-btn" @click="$emit('close')" aria-label="ปิด">✕</button>
       </div>
 
-      <div class="price-row">฿{{ item.price }}</div>
+      <div class="price-row" :class="{ 'buffet-price': isBuffet }">
+        {{ isBuffet ? "รวมในบุฟเฟต์" : `฿${item.price}` }}
+      </div>
 
       <div v-for="group in item.options" :key="group.name" class="option-group">
         <div class="group-title">
@@ -31,7 +33,7 @@
               :checked="isSelected(group, choice)"
             />
             <span>{{ choice.label }}</span>
-            <span v-if="choice.extraPrice" class="extra">+฿{{ choice.extraPrice }}</span>
+            <span v-if="choice.extraPrice && !isBuffet" class="extra">+฿{{ choice.extraPrice }}</span>
           </label>
         </div>
       </div>
@@ -52,7 +54,7 @@
 
       <p v-if="!canAdd" class="required-hint">กรุณาเลือกตัวเลือกที่มีเครื่องหมาย * ให้ครบ</p>
       <button class="btn-primary add-btn" :disabled="!canAdd" @click="confirmAdd">
-        {{ isEdit ? "บันทึกการแก้ไข" : "เพิ่มลงตะกร้า" }} · ฿{{ totalPrice }}
+        {{ isEdit ? "บันทึกการแก้ไข" : "เพิ่มลงตะกร้า" }}<template v-if="!isBuffet"> · ฿{{ totalPrice }}</template>
       </button>
     </div>
   </div>
@@ -67,6 +69,7 @@ const props = defineProps({
   initialSelectedOptions: { type: Array, default: () => [] },
   initialNote: { type: String, default: "" },
   isEdit: { type: Boolean, default: false },
+  isBuffet: { type: Boolean, default: false },
 });
 const emit = defineEmits(["close", "add"]);
 
@@ -176,6 +179,12 @@ function confirmAdd() {
   color: var(--marigold-deep);
   font-size: 20px;
   margin: 10px 0;
+}
+.price-row.buffet-price {
+  font-family: inherit;
+  color: var(--forest);
+  font-size: 14px;
+  font-weight: 700;
 }
 .option-group {
   margin-top: 18px;

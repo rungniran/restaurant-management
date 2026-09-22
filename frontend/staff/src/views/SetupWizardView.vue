@@ -102,15 +102,16 @@
               <option value="normal">ขายตามสั่งปกติ (A La Carte)</option>
               <option value="buffet">บุฟเฟต์ (Buffet)</option>
             </select>
+            <small class="field-help">เลือกตามวิธีคิดเงินหลักของร้าน ลูกค้าจะเห็นตัวเลือกบุฟเฟต์เฉพาะเมื่อเลือกโหมดนี้</small>
           </div>
           <template v-if="form.pricingMode === 'buffet'">
             <div>
               <label>ราคาบุฟเฟต์ต่อท่าน (บาท)</label>
-              <input v-model.number="form.buffetPricePerPerson" type="number" min="0" placeholder="เช่น 299" />
+              <input v-model.number="form.buffetPricePerPerson" type="number" min="1" required placeholder="เช่น 299" />
             </div>
             <div>
               <label>ระยะเวลากินบุฟเฟต์ (นาที)</label>
-              <input v-model.number="form.buffetDurationMinutes" type="number" min="15" placeholder="เช่น 90" />
+              <input v-model.number="form.buffetDurationMinutes" type="number" min="15" max="1440" required placeholder="เช่น 90" />
             </div>
           </template>
           <div class="full-width">
@@ -464,6 +465,14 @@ textarea {
 
 select {
   cursor: pointer;
+}
+
+.field-help {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .line-input-wrap {

@@ -141,6 +141,24 @@ export async function updateMyRestaurant(req, res) {
   for (const field of RESTAURANT_FIELDS) {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   }
+  const current = await Restaurant.findById(req.staff.restaurantId);
+  if (!current) return res.status(404).json({ error: "ไม่พบร้านของคุณ" });
+
+  const pricingMode = updates.pricingMode ?? current.pricingMode;
+  if (!["normal", "buffet"].includes(pricingMode)) {
+    return res.status(400).json({ error: "รูปแบบการขายไม่ถูกต้อง" });
+  }
+  if (pricingMode === "buffet") {
+    const buffetPrice = Number(updates.buffetPricePerPerson ?? current.buffetPricePerPerson);
+    const buffetDuration = Number(updates.buffetDurationMinutes ?? current.buffetDurationMinutes);
+    if (!Number.isFinite(buffetPrice) || buffetPrice <= 0) {
+      return res.status(400).json({ error: "กรุณาระบุราคาบุฟเฟต์ต่อท่านให้มากกว่า 0 บาท" });
+    }
+    if (!Number.isInteger(buffetDuration) || buffetDuration < 15 || buffetDuration > 1440) {
+      return res.status(400).json({ error: "ระยะเวลาบุฟเฟต์ต้องอยู่ระหว่าง 15-1440 นาที" });
+    }
+  }
+
   const restaurant = await Restaurant.findByIdAndUpdate(req.staff.restaurantId, updates, { new: true });
   res.json(restaurant);
 }

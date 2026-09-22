@@ -26,10 +26,10 @@
       <!-- KPI Cards -->
       <div class="kpi-grid">
         <div class="kpi-card revenue-card">
-          <div class="kpi-label">รายรับวันนี้</div>
+            <div class="kpi-label">ยอดอาหารวันนี้</div>
           <div class="kpi-value">฿{{ formatNumber(data.today.revenue) }}</div>
           <div class="kpi-subtext">
-            ชำระแล้ว: ฿{{ formatNumber(data.today.paidRevenue) }}
+            รับเงินจริงแล้ว: ฿{{ formatNumber(data.today.paidRevenue) }}
           </div>
         </div>
 
@@ -123,18 +123,12 @@
                 <td class="text-right">{{ data.month.orderCount }} คำสั่ง</td>
               </tr>
               <tr>
-                <td>รายรับวันนี้ (ทั้งหมด)</td>
+                <td>ยอดอาหารวันนี้ (ก่อนค่าบริการ/VAT)</td>
                 <td class="text-right">฿{{ formatNumber(data.today.revenue) }}</td>
               </tr>
               <tr>
-                <td>รายรับวันนี้ (ชำระแล้ว)</td>
+                <td>รับเงินจริงวันนี้ (รวมค่าบริการ/VAT)</td>
                 <td class="text-right">฿{{ formatNumber(data.today.paidRevenue) }}</td>
-              </tr>
-              <tr>
-                <td>ค้างชำระวันนี้</td>
-                <td class="text-right">
-                  ฿{{ formatNumber(data.today.revenue - data.today.paidRevenue) }}
-                </td>
               </tr>
               <tr class="summary-divider">
                 <td colspan="2"></td>

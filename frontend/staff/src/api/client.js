@@ -15,18 +15,20 @@ api.interceptors.request.use((config) => {
 // If the token is rejected (expired, or the account was deactivated /
 // re-checked server-side), clear the session and bounce to login instead of
 // leaving the user stuck on a broken page with silent 401s.
+let redirecting = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const requestUrl = error.config?.url || "";
     const isLoginRequest = requestUrl.endsWith("/staff/login") || requestUrl.endsWith("/staff/login-google");
     const isPublicAuthPage = /\/staff\/(signup|login)\/?$/.test(window.location.pathname);
-    if (error.response?.status === 401 && !isLoginRequest && !isPublicAuthPage) {
+
+    if (error.response?.status === 401 && !isLoginRequest && !isPublicAuthPage && !redirecting) {
+      redirecting = true;
       localStorage.removeItem("staff_token");
       localStorage.removeItem("staff_info");
-      if (!window.location.pathname.endsWith("/staff/login")) {
-        window.location.href = "/staff/login";
-      }
+      window.location.href = "/staff/login";
     }
     return Promise.reject(error);
   }

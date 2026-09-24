@@ -86,6 +86,11 @@
             <input v-model="form.phone" placeholder="0812345678" />
           </div>
           <div>
+            <label>เลข PromptPay สำหรับรับโอนเงิน</label>
+            <input v-model="form.promptPayId" inputmode="numeric" autocomplete="off" placeholder="เบอร์โทร 10 หลัก หรือเลขบัตรประชาชน 13 หลัก" />
+            <small class="field-help">ใช้สร้าง QR สำหรับให้ลูกค้าสแกนชำระเงิน</small>
+          </div>
+          <div>
             <label>โลโก้ URL</label>
             <input v-model="form.logoUrl" placeholder="https://..." />
           </div>
@@ -184,6 +189,7 @@ const form = ref({
   name: "",
   displayName: "",
   phone: "",
+  promptPayId: "",
   address: "",
   logoUrl: "",
   taxId: "",
@@ -227,6 +233,7 @@ async function fetchSetupStatus() {
         name: restaurant.value.name || "",
         displayName: restaurant.value.displayName || restaurant.value.name || "",
         phone: restaurant.value.phone || "",
+        promptPayId: restaurant.value.promptPayId || "",
         address: restaurant.value.address || "",
         logoUrl: restaurant.value.logoUrl || "",
         taxId: restaurant.value.taxId || "",

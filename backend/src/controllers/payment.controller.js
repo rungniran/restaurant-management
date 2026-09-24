@@ -6,6 +6,7 @@ import { generatePromptPayPayload } from "../services/promptpay.service.js";
 import { sendLineNotification } from "../services/lineNotify.service.js";
 import { emitPaymentUpdated, emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff, sessionScopedTableFilter } from "../utils/session.js";
+import { isSubscriptionActive, subscriptionError } from "../utils/subscription.js";
 
 function receiptNumber() {
   const now = new Date();
@@ -145,6 +146,7 @@ export async function createPromptPayPayment(req, res) {
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
 
   const restaurant = await Restaurant.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
   if (!restaurant?.promptPayId) {
     return res.status(400).json({ error: "ร้านนี้ยังไม่ได้ตั้งค่า PromptPay" });
   }
@@ -218,6 +220,7 @@ export async function createSplitPayment(req, res) {
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
 
   const restaurant = await Restaurant.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
   if (!restaurant?.promptPayId) {
     return res.status(400).json({ error: "ร้านนี้ยังไม่ได้ตั้งค่า PromptPay" });
   }
@@ -274,18 +277,28 @@ export async function createSplitPayment(req, res) {
 // POST /api/payment/buffet  (public, customer)  จ่ายบุฟเฟ่ต์แบบรายหัว
 // body: { qrToken, headCount }
 export async function createBuffetPayment(req, res) {
-  const { qrToken, headCount } = req.body;
-  const n = Number(headCount);
-  if (!n || n < 1 || n > 50) return res.status(400).json({ error: "จำนวนคนต้องอยู่ระหว่าง 1-50" });
+  const { qrToken, headCount, adults, children, packageName, overtimeMinutes = 0 } = req.body;
+  const legacyHeadCount = Number(headCount || 0);
+  const adultCount = Number(adults ?? legacyHeadCount);
+  const childCount = Number(children ?? 0);
+  const extraMinutes = Number(overtimeMinutes);
+  const totalGuests = adultCount + childCount;
+  if (!Number.isInteger(adultCount) || !Number.isInteger(childCount) || adultCount < 0 || childCount < 0 || totalGuests < 1 || totalGuests > 50) {
+    return res.status(400).json({ error: "จำนวนผู้ใหญ่/เด็กต้องรวมกันอยู่ระหว่าง 1-50 คน" });
+  }
+  if (!Number.isInteger(extraMinutes) || extraMinutes < 0 || extraMinutes % 30 !== 0) {
+    return res.status(400).json({ error: "เวลาต่อเพิ่มต้องเป็น 0 หรือเพิ่มครั้งละ 30 นาที" });
+  }
 
   const table = await Table.findOne({ qrToken });
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
 
   const restaurant = await Restaurant.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
   if (!restaurant?.promptPayId) {
     return res.status(400).json({ error: "ร้านนี้ยังไม่ได้ตั้งค่า PromptPay" });
   }
-  if (restaurant.pricingMode !== "buffet" || !Number(restaurant.buffetPricePerPerson)) {
+  if (restaurant.pricingMode !== "buffet") {
     return res.status(400).json({ error: "ร้านนี้ยังไม่ได้เปิดการชำระแบบบุฟเฟ่ต์รายหัว" });
   }
 
@@ -297,7 +310,16 @@ export async function createBuffetPayment(req, res) {
     return sendPaymentConflict(res, error);
   }
   const orders = await Order.find({ ...sessionScopedTableFilter(groupTables), status: { $ne: "cancelled" } });
-  const amount = +(restaurant.buffetPricePerPerson * n).toFixed(2);
+  const selectedPackage = restaurant.buffetPackages?.find((item) => item.name === packageName && item.isActive);
+  const adultPrice = Number(selectedPackage?.adultPrice || restaurant.buffetAdultPrice || restaurant.buffetPricePerPerson);
+  const childPrice = Number(selectedPackage?.childPrice ?? restaurant.buffetChildPrice ?? adultPrice);
+  const packageDuration = Number(selectedPackage?.durationMinutes || restaurant.buffetDurationMinutes || 90);
+  const overtimeRate = Number(selectedPackage?.overtimeFeePerPerson ?? restaurant.buffetOvertimeFeePerPerson ?? 0);
+  if (!adultPrice || adultPrice <= 0) return res.status(400).json({ error: "ร้านยังไม่ได้ตั้งราคาบุฟเฟต์ผู้ใหญ่" });
+  if (!Number.isFinite(childPrice) || childPrice < 0) return res.status(400).json({ error: "ราคาบุฟเฟต์เด็กไม่ถูกต้อง" });
+  const overtimeFee = overtimeRate * totalGuests * (extraMinutes / 30);
+  const deposit = Number(restaurant.buffetDepositPerPerson || 0) * totalGuests;
+  const amount = +(adultPrice * adultCount + childPrice * childCount + overtimeFee + deposit).toFixed(2);
 
   const payload = generatePromptPayPayload(restaurant.promptPayId, amount);
   const payment = await Payment.create({
@@ -313,7 +335,7 @@ export async function createBuffetPayment(req, res) {
     splitIndex: 1,
     splitTotal: 1,
     receiptNumber: `${receiptNumber()}-buffet`,
-    note: `บุฟเฟ่ต์รายหัว ${n} คน`,
+    note: `บุฟเฟ่ต์ ${selectedPackage?.name || "มาตรฐาน"}: ผู้ใหญ่ ${adultCount} เด็ก ${childCount} คน, ${packageDuration} นาที${extraMinutes ? `, ต่อเวลา ${extraMinutes} นาที` : ""}`,
   });
 
   table.status = "waiting_bill";
@@ -323,8 +345,14 @@ export async function createBuffetPayment(req, res) {
   res.status(201).json({
     payment,
     breakdown: {
-      headCount: n,
-      buffetPricePerPerson: Number(restaurant.buffetPricePerPerson),
+      headCount: totalGuests,
+      adults: adultCount,
+      children: childCount,
+      buffetPricePerPerson: adultPrice,
+      childPrice,
+      overtimeFee,
+      deposit,
+      packageDuration,
       amount,
     },
   });
@@ -432,51 +460,12 @@ export async function confirmPayment(req, res) {
   res.json(payment);
 }
 
-// POST /api/payment/webhook  (payment gateway callback)
-// Locked behind a shared secret header until a real PromptPay/gateway
-// integration exists. Without this, anyone could POST a paymentId (payment
-// IDs are already public via the receipt URL) with status:"success" and mark
-// their own bill as paid without actually transferring money.
-export async function paymentWebhook(req, res) {
-  const expectedSecret = process.env.PAYMENT_WEBHOOK_SECRET;
-  if (!expectedSecret || req.headers["x-webhook-secret"] !== expectedSecret) {
-    return res.status(401).json({ error: "Unauthorized webhook call" });
-  }
-
-  const { paymentId, status } = req.body; // shape depends on real gateway
-  const payment = await Payment.findById(paymentId);
-  if (!payment) return res.status(404).json({ error: "Payment not found" });
-
-  if (status === "success") {
-    if (payment.status !== "pending") return res.json({ received: true });
-    payment.status = "paid";
-    payment.paidAt = new Date();
-    await payment.save();
-    const fullyPaid = await markOrdersPaidIfComplete(payment);
-
-    if (fullyPaid) {
-      const groupTables = await resolveGroupTables(await Table.findById(payment.tableId));
-      for (const table of groupTables) {
-        table.status = "cleaning";
-        await table.save();
-        emitTableStatus(table.restaurantId, table);
-      }
-    }
-
-    emitPaymentUpdated(payment.restaurantId, payment);
-  } else if (status === "failed") {
-    payment.status = "failed";
-    await payment.save();
-    emitPaymentUpdated(payment.restaurantId, payment);
-  }
-
-  res.json({ received: true });
-}
-
 // GET /api/payment/table/:qrToken  (public - customer checks payment status; latest payments for this session)
 export async function getPaymentByTable(req, res) {
   const table = await Table.findOne({ qrToken: req.params.qrToken });
   if (!table) return res.status(404).json({ error: "ไม่พบโต๊ะนี้" });
+  const restaurant = await Restaurant.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
   const groupTables = await resolveGroupTables(table);
   const payments = await Payment.find({
     tableIds: { $in: groupTables.map((t) => t._id) },

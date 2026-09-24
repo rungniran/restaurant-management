@@ -6,7 +6,7 @@
       </div>
 
       <h1 class="display">สมัครสมาชิก</h1>
-      <p class="sub">สร้างร้านใหม่และเริ่มการตั้งค่าให้พร้อมเปิดให้ลูกค้าใช้บริการ</p>
+      <p class="sub">กรอกข้อมูลสั้นๆ แล้วไปตั้งค่าร้านต่อได้ภายหลัง</p>
 
       <form @submit.prevent="submit">
         <div class="form-grid">
@@ -18,22 +18,10 @@
             <label>ชื่อสำหรับแสดง</label>
             <input v-model="form.displayName" placeholder="เช่น ร้านอร่อยดี Grill & Cafe" required />
           </div>
-          <div>
-            <label>เบอร์โทร</label>
-            <input v-model="form.phone" placeholder="0812345678" />
-          </div>
-          <div>
-            <label>โลโก้ URL</label>
-            <input v-model="form.logoUrl" placeholder="https://..." />
-          </div>
-          <div class="full-width">
-            <label>ที่อยู่</label>
-            <textarea v-model="form.address" rows="3" placeholder="ที่อยู่ร้าน"></textarea>
-          </div>
         </div>
 
         <button class="btn btn-accent full" type="submit" :disabled="loading">
-          {{ loading ? "กำลังสร้างร้าน..." : "สร้างร้านและเข้าสู่ Setup Wizard" }}
+          {{ loading ? "กำลังสร้างร้าน..." : "สร้างร้านและเริ่มตั้งค่าร้าน" }}
         </button>
 
         <p v-if="error" class="error-text">{{ error }}</p>
@@ -56,9 +44,6 @@ const error = ref("");
 const form = ref({
   name: "",
   displayName: "",
-  phone: "",
-  address: "",
-  logoUrl: "",
 });
 
 async function submit() {
@@ -95,7 +80,7 @@ async function submit() {
 }
 
 .auth-card {
-  width: min(720px, 100%);
+  width: min(520px, 100%);
   padding: 28px 26px;
 }
 
@@ -115,7 +100,7 @@ h1 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
@@ -155,9 +140,4 @@ textarea {
   text-align: center;
 }
 
-@media (max-width: 640px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -13,6 +13,7 @@ const orderItemSchema = new mongoose.Schema({
   menuItemId: { type: mongoose.Schema.Types.ObjectId, ref: "MenuItem", required: true },
   name: { type: String, required: true },
   price: { type: Number, required: true }, // base price at time of order
+  costPrice: { type: Number, default: 0 },
   quantity: { type: Number, required: true, default: 1 },
   selectedOptions: [selectedOptionSchema],
   note: { type: String, default: "" },

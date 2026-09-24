@@ -25,6 +25,13 @@ const menuItemSchema = new mongoose.Schema(
     name: { type: String, required: true },
     description: { type: String, default: "" },
     price: { type: Number, required: true },
+    costPrice: { type: Number, min: 0, default: 0 },
+    recipe: [
+      {
+        inventoryItemId: { type: mongoose.Schema.Types.ObjectId, ref: "InventoryItem" },
+        quantity: { type: Number, min: 0, default: 0 },
+      },
+    ],
     imageUrl: { type: String, default: "" },
     isAvailable: { type: Boolean, default: true },
     station: {

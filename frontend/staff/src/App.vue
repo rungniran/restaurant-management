@@ -47,12 +47,13 @@ const auth = useAuthStore();
 const isLoginPage = computed(() => ["landing", "login", "signup", "change-password"].includes(route.name));
 
 const ALL_NAV = [
-  { name: "setup", to: "/setup", icon: "fa-rocket", label: "Setup Wizard", roles: ["owner", "manager"] },
+  { name: "setup", to: "/setup", icon: "fa-rocket", label: "ตั้งค่าร้าน", roles: ["owner", "manager"] },
   { name: "dashboard", to: "/dashboard", icon: "fa-chart-column", label: "Dashboard", roles: ["owner", "manager"] },
   { name: "kitchen", to: "/kitchen", icon: "fa-burger", label: "จอครัว", roles: ["owner", "manager", "kitchen"] },
   { name: "tables", to: "/tables", icon: "fa-chair", label: "จัดการโต๊ะ", roles: ["owner", "manager", "waiter", "cashier"] },
   { name: "reservations", to: "/reservations", icon: "fa-calendar-days", label: "การจอง", roles: ["owner", "manager", "waiter"] },
   { name: "menu", to: "/menu", icon: "fa-book-open", label: "เมนูอาหาร", roles: ["owner", "manager"] },
+  { name: "inventory", to: "/inventory", icon: "fa-boxes-stacked", label: "สต็อกและต้นทุน", roles: ["owner", "manager"] },
   { name: "payments", to: "/payments", icon: "fa-receipt", label: "ประวัติการชำระเงิน", roles: ["owner", "manager", "cashier"] },
   { name: "staffAccounts", to: "/staff-accounts", icon: "fa-user-group", label: "จัดการพนักงาน", roles: ["owner", "manager"] },
 ];

@@ -17,11 +17,11 @@
             <img v-if="s.avatarUrl" :src="s.avatarUrl" :alt="s.name" class="staff-avatar" />
             <div v-else class="staff-avatar staff-avatar-fallback"><i class="fa-solid fa-user"></i></div>
             <div>
-            <div class="staff-name">
-              {{ s.name }}
-              <span v-if="s._id === auth.staff?.id" class="you-tag">คุณ</span>
-            </div>
-            <div class="staff-meta">@{{ s.username }}</div>
+              <div class="staff-name">
+                {{ s.name }}
+                <span v-if="s._id === auth.staff?.id" class="you-tag">คุณ</span>
+              </div>
+              <div class="staff-meta">@{{ s.username }}</div>
             </div>
           </div>
           <span class="chip" :class="`role-${s.role}`">{{ roleLabel(s.role) }}</span>
@@ -190,6 +190,7 @@ async function remove(staff) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 14px;
   margin-bottom: 20px;
 }
 h2 {
@@ -206,12 +207,13 @@ h2 {
   margin: 0 0 12px;
 }
 .list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .staff-card {
   padding: 14px 16px;
+  min-width: 0;
 }
 .staff-card.inactive {
   opacity: 0.55;
@@ -220,6 +222,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
 }
 .staff-identity {
   display: flex;
@@ -278,6 +281,10 @@ h2 {
   margin-top: 12px;
   flex-wrap: wrap;
 }
+.staff-actions .btn {
+  flex: 1;
+  min-width: 92px;
+}
 .btn.small {
   padding: 6px 12px;
   font-size: 12px;
@@ -324,5 +331,28 @@ h2 {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+@media (max-width: 760px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .page-header .btn {
+    width: 100%;
+  }
+  .staff-top {
+    align-items: flex-start;
+  }
+  .staff-top > .chip {
+    flex-shrink: 0;
+  }
 }
 </style>

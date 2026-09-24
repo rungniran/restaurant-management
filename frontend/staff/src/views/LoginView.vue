@@ -20,23 +20,16 @@
           {{ loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ" }}
         </button>
 
-        <div class="divider"><span>หรือ</span></div>
-
-        <button type="button" id="google-signin-button" class="btn google-btn" @click="handleGoogleLogin" :disabled="loading">
-          <span class="google-icon">G</span>
-          Continue with Google
-        </button>
-
         <p v-if="auth.error" class="error-text">{{ auth.error }}</p>
       </form>
 
-      <p class="demo-hint">Demo: owner / owner123, waiter / waiter123, cashier / cashier123</p>
+      <p class="demo-hint">Demo: yangthai-owner / owner123 หรือ baan-suan-owner / owner123</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../api/client";
 import { useAuthStore } from "../stores/auth";
@@ -46,46 +39,6 @@ const router = useRouter();
 const username = ref("");
 const password = ref("");
 const loading = ref(false);
-
-onMounted(() => {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    console.warn("VITE_GOOGLE_CLIENT_ID is not configured. Google login is disabled.");
-    return;
-  }
-
-  const script = document.createElement("script");
-  script.src = "https://accounts.google.com/gsi/client";
-  script.async = true;
-  script.defer = true;
-  script.onload = () => {
-    if (!window.google?.accounts?.id) return;
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async (response) => {
-        if (!response?.credential) return;
-        loading.value = true;
-        const ok = await auth.loginGoogleWithCredential(response.credential);
-        loading.value = false;
-
-        if (!ok) return;
-        router.push({ name: ["owner", "manager"].includes(auth.staff?.role) ? "setup" : "tables" });
-      },
-    });
-
-    const googleButton = document.getElementById("google-signin-button");
-    if (googleButton) {
-      window.google.accounts.id.renderButton(googleButton, {
-        theme: "outline",
-        size: "large",
-        width: "100%",
-        text: "continue_with",
-      });
-    }
-  };
-
-  document.head.appendChild(script);
-});
 
 async function handleLogin() {
   loading.value = true;
@@ -107,14 +60,6 @@ async function handleLogin() {
   router.push({ name: auth.staff?.role === "kitchen" ? "kitchen" : "tables" });
 }
 
-async function handleGoogleLogin() {
-  if (!window.google?.accounts?.id) {
-    alert("Google sign-in ยังไม่ได้ตั้งค่า กรุณาเพิ่ม VITE_GOOGLE_CLIENT_ID ใน .env");
-    return;
-  }
-
-  window.google.accounts.id.prompt();
-}
 </script>
 
 <style scoped>

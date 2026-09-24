@@ -5,6 +5,7 @@ import {
   listRestaurants,
   getSetupStatus,
   getMyRestaurant,
+  getSubscriptionStatus,
   updateMyRestaurant,
   testLineNotify,
 } from "../controllers/restaurant.controller.js";
@@ -15,6 +16,7 @@ router.post("/", createRestaurant);
 router.get("/", listRestaurants);
 router.get("/setup-status", requireAuth, getSetupStatus);
 router.get("/me", requireAuth, getMyRestaurant);
+router.get("/subscription", requireAuth, getSubscriptionStatus);
 router.patch("/me", requireAuth, requireRole("owner", "manager"), updateMyRestaurant);
 router.post("/test-line-notify", requireAuth, requireRole("owner", "manager"), testLineNotify);
 

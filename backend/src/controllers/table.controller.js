@@ -4,6 +4,7 @@ import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
 import { emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff, sessionScopedTableFilter } from "../utils/session.js";
+import { isSubscriptionActive, subscriptionError } from "../utils/subscription.js";
 
 // GET /api/table/:qrToken  -> public, resolves QR token to table + active order
 export async function getTableByToken(req, res) {
@@ -27,6 +28,7 @@ export async function getTableByToken(req, res) {
   }
 
   const restaurant = await (await import("../models/Restaurant.js")).default.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
 
   res.json({ table, orders: activeOrders, groupTables, restaurant });
 }
@@ -52,6 +54,7 @@ export async function getBillSummary(req, res) {
   }));
 
   const restaurantInfo = await (await import("../models/Restaurant.js")).default.findById(table.restaurantId);
+  if (!isSubscriptionActive(restaurantInfo)) return subscriptionError(res);
   const subtotal = orders.reduce((s, o) => s + o.subtotal, 0);
   const serviceCharge = +(subtotal * ((restaurantInfo?.serviceChargePercent || 0) / 100)).toFixed(2);
   const vat = +((subtotal + serviceCharge) * ((restaurantInfo?.vatPercent || 0) / 100)).toFixed(2);
@@ -82,6 +85,12 @@ export async function getBillSummary(req, res) {
     perTable,
     buffetEnabled: restaurantInfo?.pricingMode === "buffet" && Number(restaurantInfo?.buffetPricePerPerson) > 0,
     buffetPricePerPerson: Number(restaurantInfo?.buffetPricePerPerson || 0),
+    buffetAdultPrice: Number(restaurantInfo?.buffetAdultPrice || restaurantInfo?.buffetPricePerPerson || 0),
+    buffetChildPrice: Number(restaurantInfo?.buffetChildPrice || 0),
+    buffetChildMaxAge: Number(restaurantInfo?.buffetChildMaxAge || 12),
+    buffetOvertimeFeePerPerson: Number(restaurantInfo?.buffetOvertimeFeePerPerson || 0),
+    buffetDepositPerPerson: Number(restaurantInfo?.buffetDepositPerPerson || 0),
+    buffetPackages: (restaurantInfo?.buffetPackages || []).filter((item) => item.isActive),
   });
 }
 

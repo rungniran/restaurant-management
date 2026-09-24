@@ -18,11 +18,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || "";
+    const isLoginRequest = requestUrl.endsWith("/staff/login") || requestUrl.endsWith("/staff/login-google");
+    const isPublicAuthPage = /\/staff\/(signup|login)\/?$/.test(window.location.pathname);
+    if (error.response?.status === 401 && !isLoginRequest && !isPublicAuthPage) {
       localStorage.removeItem("staff_token");
       localStorage.removeItem("staff_info");
-      if (!window.location.pathname.endsWith("/staff/") && !window.location.pathname.endsWith("/staff")) {
-        window.location.href = "/staff/";
+      if (!window.location.pathname.endsWith("/staff/login")) {
+        window.location.href = "/staff/login";
       }
     }
     return Promise.reject(error);

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Chonburi&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap");
 
 :root {
   --bg: #14161a;
@@ -27,7 +27,7 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: "Noto Sans Thai", sans-serif;
+  font-family: "Google Sans", "Google Sans Text", "Noto Sans Thai", sans-serif;
 }
 
 /* Icon styling */
@@ -41,7 +41,7 @@ h1,
 h2,
 h3,
 .display {
-  font-family: "Chonburi", "Noto Sans Thai", serif;
+  font-family: "Mitr", "Google Sans", "Google Sans Text", "Noto Sans Thai", sans-serif;
   font-weight: 400;
   margin: 0;
 }

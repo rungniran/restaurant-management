@@ -11,6 +11,7 @@ import Order from "./models/Order.js";
 import Payment from "./models/Payment.js";
 import Reservation from "./models/Reservation.js";
 import ServiceRequest from "./models/ServiceRequest.js";
+import InventoryItem from "./models/InventoryItem.js";
 
 const image = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&q=80`;
 const avatar = (id) => `https://i.pravatar.cc/160?img=${id}`;
@@ -193,7 +194,33 @@ async function seedRestaurant(config) {
       isAvailable: true,
     }))
   );
-  await MenuItem.insertMany(menuItems);
+  const inventorySeed = [
+    ["หมูสไลซ์", "kg", 35, 5, 180],
+    ["เนื้อวัว", "kg", 22, 4, 320],
+    ["กุ้งสด", "kg", 18, 3, 280],
+    ["ผักรวม", "kg", 30, 5, 70],
+    ["ข้าวสาร", "kg", 45, 10, 32],
+    ["เส้นและแป้ง", "kg", 25, 5, 55],
+    ["เครื่องปรุงไทย", "pack", 20, 4, 120],
+    ["ผลไม้และของหวาน", "kg", 18, 4, 95],
+  ];
+  const inventoryItems = await InventoryItem.insertMany(
+    inventorySeed.map(([name, unit, stock, reorderPoint, costPerUnit]) => ({
+      restaurantId: restaurant._id,
+      name,
+      unit,
+      stock,
+      reorderPoint,
+      costPerUnit,
+      supplier: "ตัวอย่างซัพพลายเออร์",
+    }))
+  );
+  const inventoryByName = new Map(inventoryItems.map((item) => [item.name, item]));
+  const recipeFor = (item) => {
+    const ingredient = item.station === "grill" ? inventoryByName.get("หมูสไลซ์") : item.station === "dessert" ? inventoryByName.get("ผลไม้และของหวาน") : item.station === "drink" ? inventoryByName.get("เครื่องปรุงไทย") : inventoryByName.get("ผักรวม");
+    return ingredient ? [{ inventoryItemId: ingredient._id, quantity: item.station === "drink" ? 1 : 0.15 }] : [];
+  };
+  await MenuItem.insertMany(menuItems.map((item) => ({ ...item, costPrice: +(item.price * 0.35).toFixed(2), recipe: recipeFor(item) })));
 
   const staffAccounts = [
     { name: `${config.name} Owner`, username: `${config.slug}-owner`, password: "owner123", role: "owner", avatarUrl: avatar(12) },

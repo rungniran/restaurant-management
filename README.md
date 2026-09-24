@@ -20,7 +20,10 @@ QR ประจำโต๊ะ, Digital Menu (สั่งง่ายแบบ 
 Kitchen Display (real-time, แยก station), เรียกพนักงาน, PromptPay QR (เต็มบิล/หารเท่ากัน/เลือกจ่ายรายการ),
 จัดการโต๊ะ (เพิ่ม/ปล่อย/ต่อโต๊ะ), ระบบจองโต๊ะ, ประวัติการชำระเงิน, **จัดการเมนูอาหาร (เพิ่ม/แก้ไข/ลบ/เปิดปิดขาย)**,
 **Dashboard สรุปยอดขาย** (KPI, Peak Hours, Top Menu Items, Revenue Analysis),
-**QR Code Display & Management** (พิมพ์ + คัดลอก URL)
+**QR Code Display & Management** (พิมพ์ + คัดลอก URL), **สต็อกและต้นทุนอาหาร** (วัตถุดิบ, recipe,
+จุดสั่งซื้อ, มูลค่าสต็อก), และ **โหมดบุฟเฟต์ขั้นสูง** (ผู้ใหญ่/เด็ก, แพ็กเกจ, ต่อเวลา, มัดจำ)
+
+ระบบมีทดลองใช้ฟรีสำหรับร้านใหม่ 3 เดือน หลังหมด trial ร้านต้องเปิดใช้งานแพ็กเกจแบบชำระเงินจึงจะใช้งานต่อได้
 
 ---
 
@@ -30,31 +33,34 @@ Kitchen Display (real-time, แยก station), เรียกพนักง�
 
 - `http://localhost:4000/staff` หรือ `/staff` → หน้าเข้าสู่ระบบประจำ staff app
 - `http://localhost:4000/staff/#/signup` → หน้า สมัครสมาชิก / สร้างร้านค้า
-- `http://localhost:4000/staff/#/` หรือ `http://localhost:4000/staff` หลัง login แล้ว → จะ redirect ไป Setup Wizard / Dashboard ตาม role
+- `http://localhost:4000/staff/#/` หรือ `http://localhost:4000/staff` หลัง login แล้ว → จะ redirect ไปหน้าตั้งค่าร้านครั้งแรก / Dashboard ตาม role
 
 ### Flow ที่ใช้จริง
 
 1. เปิด landing page: `http://localhost:4000/staff/#/` หรือ `http://localhost:4000/staff`
 2. คลิก `สมัครสมาชิก`
-3. กรอกข้อมูลร้าน เช่น ชื่อร้าน, ชื่อสำหรับแสดง, เบอร์โทร, ที่อยู่, โลโก้
+3. กรอกเพียงชื่อร้านและชื่อสำหรับแสดง
 4. ระบบจะสร้างร้านและ owner account ให้โดยอัตโนมัติ
-5. หลังสมัครเสร็จ จะเข้าสู่ `Setup Wizard` โดยตรง
-6. ใน Setup Wizard สามารถตั้งค่าเมนู, โต๊ะ, QR, พนักงาน และเปิด/ปิดร้านได้
+5. หลังสมัครเสร็จ จะเข้าสู่หน้าตั้งค่าร้านครั้งแรกโดยตรง
+6. ในหน้าตั้งค่าร้านสามารถกรอกเบอร์โทร, ที่อยู่, โลโก้, เมนู, โต๊ะ, QR, พนักงาน,
+   ภาษี, รูปแบบบุฟเฟต์ และเปิด/ปิดร้านได้
 
 > หมายเหตุ: ถ้าเป็นการรันแบบ backend serve ทุกอย่าง (production-style) หน้า landing และ signup จะอยู่ภายใน staff app เดียวกัน โดย route อยู่ใน Vue Router ของ `frontend/staff` และถูก serve ผ่าน `/staff`
 
-## Staff app: 1 แอป รวม 6 หน้าที่ (role-based)
+## Staff app: 1 แอป รวม 8 หน้าที่ (role-based)
 
 Login เข้า `/staff` ครั้งเดียว เมนูด้านซ้ายจะโชว์เฉพาะสิ่งที่ role นั้นเข้าได้:
 
-| หน้า | roles ที่เห็น |
-|---|---|
-| 📊 Dashboard (สรุปยอดขาย) | owner, manager |
-| 🍳 จอครัว (Kitchen Display) | owner, manager, kitchen |
+| หน้า                                                       | roles ที่เห็น            |
+| -------------------------------------------------------------- | ------------------------------- |
+| 📊 Dashboard (สรุปยอดขาย)                            | owner, manager                  |
+| 🍳 จอครัว (Kitchen Display)                              | owner, manager, kitchen         |
 | 🪑 จัดการโต๊ะ (เพิ่ม/ปล่อย/ต่อโต๊ะ) | owner, manager, waiter, cashier |
-| 📅 การจอง | owner, manager, waiter |
-| 📋 เมนูอาหาร | owner, manager |
-| 🧾 ประวัติการชำระเงิน | owner, manager, cashier |
+| 📅 การจอง                                                | owner, manager, waiter          |
+| 📋 เมนูอาหาร                                          | owner, manager                  |
+| 📦 สต็อกและต้นทุน                                | owner, manager                  |
+| 🧾 ประวัติการชำระเงิน                        | owner, manager, cashier         |
+| 👥 จัดการพนักงาน                                  | owner, manager                  |
 
 Login ด้วย role `kitchen` จะพาไปหน้า "จอครัว" ทันทีหลัง login (เพราะเป็นหน้าเดียวที่ role นี้ใช้งาน)
 
@@ -65,7 +71,8 @@ Login ด้วย role `kitchen` จะพาไปหน้า "จอคร�
 ```bash
 # 1) เตรียม backend
 cd backend
-cp .env.example .env      # แก้ MONGO_URI และ PROMPTPAY_ID ให้ตรงกับของจริง
+# Windows: copy .env.example .env
+# ต้องมี MongoDB ที่ MONGO_URI ชี้อยู่และเปิดใช้งานก่อน
 npm install
 
 # 2) สร้างข้อมูลตัวอย่าง
@@ -78,7 +85,12 @@ npm run build:frontend
 npm start
 ```
 
+ถ้าใช้ค่าเริ่มต้นใน `.env` ต้องติดตั้งและเปิด MongoDB local ให้มี service ฟังที่
+`127.0.0.1:27017` ก่อน หากยังไม่มี MongoDB ให้ติดตั้ง MongoDB Community Server
+หรือเปลี่ยน `MONGO_URI` ไปใช้ MongoDB Atlas
+
 เปิด:
+
 - **Customer app**: `http://localhost:4000/order/<QR_TOKEN_จากขั้นตอน_seed>`
 - **Staff+Kitchen app**: `http://localhost:4000/staff`
 
@@ -109,10 +121,14 @@ npm install && npm run dev              # http://localhost:5175/staff/  (base pa
 ```
 
 **Staff login สำหรับทดสอบ** (จาก `npm run seed`):
-- `owner / owner123` — เห็นทุกหน้า
-- `kitchen / kitchen123` — เห็นเฉพาะจอครัว
-- `waiter / waiter123` — โต๊ะ + การจอง
-- `cashier / cashier123` — โต๊ะ + ประวัติการชำระเงิน
+
+- ร้านบุฟเฟต์: `yangthai-owner / owner123`
+- ร้านปกติ: `baan-suan-owner / owner123`
+- ผู้จัดการ: `yangthai-manager / manager123` หรือ `baan-suan-manager / manager123`
+- บัญชีอื่นของแต่ละร้านใช้ suffix `-kitchen`, `-waiter`, `-cashier`
+
+`npm run seed` จะล้างข้อมูลเดิมทั้งหมด แล้วสร้างร้านตัวอย่าง 2 ร้าน ร้านละ 12 โต๊ะ
+พร้อมเมนูจำนวนมาก รูปอาหาร รูปพนักงาน วัตถุดิบ และ recipe ตัวอย่าง
 
 **การสั่งอาหารแบบง่ายที่สุด (ฝั่งลูกค้า):** เมนูที่ไม่มี option ให้เลือก (เช่น น้ำเปล่า) จะมีปุ่ม "+ เพิ่ม"
 ที่การ์ดเมนูเลย แตะครั้งเดียวเข้าตะกร้าทันที ไม่ต้องเปิดหน้าต่างเลือก option — เมนูที่มี option
@@ -132,8 +148,9 @@ npm install && npm run dev              # http://localhost:5175/staff/  (base pa
 6. ดูออเดอร์ขึ้นที่ Kitchen Display ทันที (real-time ผ่าน Socket.io — เชื่อมด้วย JWT ตอน connect
    ทำให้ join ห้อง real-time ได้ทันทีไม่มี race condition และ auto-sync ใหม่ทุกครั้งที่ reconnect)
 7. กลับไปหน้า "สถานะออเดอร์" ฝั่งลูกค้า → ลองกด "จ่ายออเดอร์นี้เลย" หรือ "เช็คบิลรวม"
-8. ในหน้าเช็คบิล ลองสลับโหมด "จ่ายเต็มบิล" / "หารเท่ากัน" / "เลือกจ่ายรายการ" — ได้ QR PromptPay จริง
-9. เปิดหน้า "ประวัติการชำระเงิน" ใน staff app → เห็นรายการที่เพิ่งสร้าง → กด "ยืนยันจ่ายแล้ว"
+8. โหมดร้านปกติเลือก "จ่ายเต็มบิล" / "หารเท่ากัน" / "เลือกจ่ายรายการ" ได้
+9. โหมดบุฟเฟต์เลือกจำนวนผู้ใหญ่/เด็ก ค่าต่อเวลา และมัดจำ แล้วสร้าง QR PromptPay
+10. เปิดหน้า "ประวัติการชำระเงิน" ใน staff app → ตรวจยอด/สลิป → กด "ยืนยันจ่ายแล้ว"
 
 ---
 
@@ -142,10 +159,9 @@ npm install && npm run dev              # http://localhost:5175/staff/  (base pa
 ทุกการชำระเงินมีใบเสร็จของตัวเองที่ `/receipt/:paymentId` — เป็นหน้าแบบสแตนด์อโลนไม่ผูกกับ
 qrToken จึงใช้ลิงก์เดียวกันได้ทั้ง 2 ทาง:
 
-- **ฝั่งลูกค้า**: พอ QR PromptPay ถูกจ่ายสำเร็จ (สถานะเปลี่ยนแบบ real-time ผ่าน socket
-  โดยไม่ต้อง refresh หน้า) จะมีลิงก์ "🧾 ดูใบเสร็จ / พิมพ์ใบเสร็จ" โผล่ขึ้นมาที่หน้าเช็คบิลทันที
-  กดแล้วเปิดใบเสร็จ พร้อมปุ่ม "พิมพ์ใบเสร็จ" (เรียก `window.print()` พร้อม CSS สำหรับพิมพ์โดยเฉพาะ
-  ซ่อนเมนู/ปุ่มต่างๆ ให้เหลือแต่ตัวใบเสร็จตอนพิมพ์จริง)
+- **ฝั่งลูกค้า**: หลังพนักงานตรวจสอบยอดและกดยืนยันการชำระเงิน สถานะจะอัปเดตแบบ real-time ผ่าน socket
+  โดยไม่ต้อง refresh หน้า แล้วลิงก์ "ดูใบเสร็จ / พิมพ์ใบเสร็จ" จะปรากฏในหน้าเช็คบิล
+  (เรียก `window.print()` พร้อม CSS สำหรับพิมพ์โดยเฉพาะ)
 - **ฝั่ง staff**: หน้า "ประวัติการชำระเงิน" มีปุ่ม "🧾 ใบเสร็จ" ต่อแถว เปิดใบเสร็จเดียวกันในแท็บใหม่
   สำหรับพิมพ์ซ้ำหรือเช็คย้อนหลังได้ทุกเมื่อ
 
@@ -168,6 +184,7 @@ qrToken จึงใช้ลิงก์เดียวกันได้ทั
 ทำให้ order ที่เกิดขึ้นระหว่างนั้น "หาย" จนกว่าจะ refresh หน้าเอง
 
 แก้โดย:
+
 1. **Server join ห้องให้อัตโนมัติ** ทันทีที่ socket connect โดยตรวจสอบ JWT token ที่ส่งมาตอน
    connect (`socket.handshake.auth.token`) แทนที่จะรอ client emit "join" เอง — ตัด race condition ทิ้งไปเลย
 2. **Self-heal เมื่อ reconnect**: ทุกครั้งที่ socket เชื่อมต่อ (รวมถึงตอน reconnect หลังหลุด)
@@ -202,29 +219,36 @@ order ที่เพิ่งสร้างจะมี `createdAt` ไม่�
 
 ## API ที่มีให้ (backend)
 
-| Path | Auth | คำอธิบาย |
-|---|---|---|
-| `GET /api/menu/:restaurantId` | public | เมนูทั้งหมด แบ่งตามหมวด |
-| `POST/PATCH/DELETE /api/menu/category`, `/item` | staff (owner/manager) | จัดการเมนู (มี UI แล้วที่หน้า "เมนูอาหาร") |
-| `PATCH /api/menu/item/:id/toggle` | staff (owner/manager) | เปิด/ปิดขายเมนู |
-| `GET /api/table/qr/:qrToken` | public | ข้อมูลโต๊ะ + ออเดอร์ปัจจุบัน + โต๊ะที่ต่อกัน |
-| `GET /api/table/qr/:qrToken/bill-summary` | public | ยอดบิลรวม (รวมโต๊ะที่ต่อกันถ้ามี) |
-| `POST /api/table` | staff | เพิ่มโต๊ะใหม่ (auto-generate QR token) |
-| `POST /api/table/merge` | staff | ต่อโต๊ะ (รวมหลายโต๊ะเป็นกลุ่มบิลเดียว) |
-| `PATCH /api/table/:id/unmerge` | staff | แยกโต๊ะออกจากกลุ่ม |
-| `PATCH /api/table/:id/release` | staff | ปล่อยโต๊ะ (คืนสถานะว่าง) |
-| `GET/POST /api/reservation` | staff | จองโต๊ะ / ดูรายการจอง |
-| `PATCH /api/reservation/:id` | staff | เปลี่ยนสถานะการจอง |
-| `POST /api/order` | public | ลูกค้าสั่งอาหาร |
-| `GET /api/order/kitchen?station=` | staff | ออเดอร์สำหรับจอครัว |
-| `PATCH /api/order/:orderId/item/:itemId` | staff | เปลี่ยนสถานะรายการอาหาร |
-| `POST /api/payment/promptpay` | public | สร้าง QR PromptPay (เต็มบิล/บาง order/เลือกรายการ) |
-| `POST /api/payment/split` | public | หารบิลเท่ากัน N คน |
-| `GET /api/payment/history` | staff (cashier+) | ประวัติการชำระเงินทั้งหมด กรองได้ |
-| `POST /api/payment/:id/confirm` | staff (cashier) | cashier ยืนยันว่าจ่ายแล้ว |
-| `POST /api/service-request` | public | ลูกค้าเรียกพนักงาน/ขอบิล |
-| `POST /api/staff/login` | public | login สำหรับ staff |
-| `GET /api/dashboard/summary` | staff (owner/manager/cashier) | ยอดขาย, best seller, peak hour |
+| Path                                                | Auth                          | คำอธิบาย                                                                             |
+| --------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| `GET /api/menu/:restaurantId`                     | public                        | เมนูทั้งหมด แบ่งตามหมวด                                                |
+| `POST/PATCH/DELETE /api/menu/category`, `/item` | staff (owner/manager)         | จัดการเมนู (มี UI แล้วที่หน้า "เมนูอาหาร")                   |
+| `PATCH /api/menu/item/:id/toggle`                 | staff (owner/manager)         | เปิด/ปิดขายเมนู                                                                |
+| `GET /api/table/qr/:qrToken`                      | public                        | ข้อมูลโต๊ะ + ออเดอร์ปัจจุบัน + โต๊ะที่ต่อกัน           |
+| `GET /api/table/qr/:qrToken/bill-summary`         | public                        | ยอดบิลรวม (รวมโต๊ะที่ต่อกันถ้ามี)                              |
+| `POST /api/table`                                 | staff                         | เพิ่มโต๊ะใหม่ (auto-generate QR token)                                          |
+| `POST /api/table/merge`                           | staff                         | ต่อโต๊ะ (รวมหลายโต๊ะเป็นกลุ่มบิลเดียว)                    |
+| `PATCH /api/table/:id/unmerge`                    | staff                         | แยกโต๊ะออกจากกลุ่ม                                                         |
+| `PATCH /api/table/:id/release`                    | staff                         | ปล่อยโต๊ะ (คืนสถานะว่าง)                                                |
+| `GET/POST /api/reservation`                       | staff                         | จองโต๊ะ / ดูรายการจอง                                                      |
+| `PATCH /api/reservation/:id`                      | staff                         | เปลี่ยนสถานะการจอง                                                         |
+| `POST /api/order`                                 | public                        | ลูกค้าสั่งอาหาร                                                               |
+| `GET /api/order/kitchen?station=`                 | staff                         | ออเดอร์สำหรับจอครัว                                                       |
+| `PATCH /api/order/:orderId/item/:itemId`          | staff                         | เปลี่ยนสถานะรายการอาหาร                                               |
+| `POST /api/payment/promptpay`                     | public                        | สร้าง QR PromptPay (เต็มบิล/บาง order/เลือกรายการ)                 |
+| `POST /api/payment/split`                         | public                        | หารบิลเท่ากัน N คน                                                            |
+| `POST /api/payment/buffet`                        | public                        | ชำระบุฟเฟต์ตามผู้ใหญ่/เด็ก/แพ็กเกจ/ต่อเวลา/มัดจำ |
+| `POST /api/payment/manual`                        | staff (cashier+)              | บันทึกการชำระเงินสดหรือบัตรโดยคำนวณยอดจาก server    |
+| `GET /api/payment/history`                        | staff (cashier+)              | ประวัติการชำระเงินทั้งหมด กรองได้                            |
+| `POST /api/payment/:id/confirm`                   | staff (owner/manager/cashier) | ตรวจสอบและยืนยันว่าจ่ายแล้ว                                       |
+| `GET/POST /api/inventory`                         | staff (owner/manager)         | ดูและเพิ่มวัตถุดิบ                                                         |
+| `PATCH /api/inventory/:id`                        | staff (owner/manager)         | แก้ไขข้อมูลวัตถุดิบ                                                       |
+| `POST /api/inventory/:id/adjust`                  | staff (owner/manager)         | ปรับจำนวนสต็อกเข้า/ออก                                                  |
+| `GET /api/inventory/summary`                      | staff (owner/manager)         | สต็อกใกล้หมดและมูลค่าวัตถุดิบ                                   |
+| `GET /api/restaurant/subscription`                | staff                         | สถานะ trial/แพ็กเกจและวันหมดอายุ                                    |
+| `POST /api/service-request`                       | public                        | ลูกค้าเรียกพนักงาน/ขอบิล                                              |
+| `POST /api/staff/login`                           | public                        | login สำหรับ staff                                                                     |
+| `GET /api/dashboard/summary`                      | staff (owner/manager/cashier) | ยอดขาย, best seller, peak hour                                                         |
 
 Socket.io events: `order:new`, `order:updated`, `table:status`, `service:requested`,
 `service:acknowledged`, `payment:updated`. Staff/kitchen sockets ยืนยันตัวตนผ่าน
@@ -232,13 +256,13 @@ Socket.io events: `order:new`, `order:updated`, `table:status`, `service:request
 
 ---
 
-## ขั้นตอนถัดไปที่แนะนำ (หลัง MVP)
+## ขั้นตอนถัดไปที่แนะนำ
 
-1. **Staff account management UI** — API พร้อมแล้ว (`/api/staff`) ยังไม่มีหน้าจอสร้าง/แก้ไข staff account
-2. **Floor Plan แบบ visual** สำหรับดูสถานะโต๊ะทั้งร้านเป็นผังจริง
-3. ต่อ **payment gateway จริง** (เช่น Omise, 2C2P, SCB) เข้ากับ `paymentWebhook` เพื่อ auto-confirm การจ่ายเงิน
-4. เพิ่มระบบ Coupon/Discount, สมาชิก/Loyalty
-5. ตั้ง Docker + MongoDB Atlas สำหรับ deploy จริง, เปิด HTTPS, generate QR code จริงชี้ไปที่ production URL
+1. เชื่อมระบบสมัครแพ็กเกจ/ต่ออายุ หลัง trial หมด
+2. เพิ่ม Floor Plan แบบ visual สำหรับดูสถานะโต๊ะทั้งร้านเป็นผังจริง
+3. เพิ่ม Coupon/Discount และสมาชิก/Loyalty
+4. เพิ่ม audit log สำหรับการยืนยันเงิน ปรับสต็อก และการแก้ไขราคา
+5. ตั้ง Docker + MongoDB Atlas สำหรับ deploy จริง และเปิด HTTPS
 
 ## Deploy เป็น Production (สรุปคร่าวๆ)
 

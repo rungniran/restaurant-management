@@ -23,6 +23,7 @@ import staffRoutes from "./routes/staff.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
+import inventoryRoutes from "./routes/inventory.routes.js";
 
 const app = express();
 
@@ -144,6 +145,7 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use("/api", apiLimiter);
+app.use("/api/inventory", inventoryRoutes);
 
 // Serve uploaded files
 app.use("/uploads", express.static(uploadsDir));

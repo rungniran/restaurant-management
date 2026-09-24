@@ -5,6 +5,7 @@ import Staff from "../models/Staff.js";
 import Category from "../models/Category.js";
 import MenuItem from "../models/MenuItem.js";
 import Table from "../models/Table.js";
+import { getTrialEndsAt } from "../utils/subscription.js";
 
 function slugify(value) {
   return (value || "restaurant")
@@ -111,6 +112,24 @@ export async function getMyRestaurant(req, res) {
   res.json(restaurant);
 }
 
+// GET /api/restaurant/subscription (staff auth)
+export async function getSubscriptionStatus(req, res) {
+  const restaurant = await Restaurant.findById(req.staff.restaurantId).select(
+    "subscriptionStatus trialEndsAt paidUntil monthlyPrice createdAt"
+  );
+  if (!restaurant) return res.status(404).json({ error: "ไม่พบร้านของคุณ" });
+  const trialEndsAt = getTrialEndsAt(restaurant);
+  const trialExpired = (restaurant.subscriptionStatus || "trial") === "trial" && trialEndsAt <= new Date();
+  const paidExpired = restaurant.subscriptionStatus === "active" && restaurant.paidUntil && restaurant.paidUntil <= new Date();
+  res.json({
+    status: trialExpired ? "past_due" : paidExpired ? "past_due" : restaurant.subscriptionStatus,
+    trialEndsAt,
+    paidUntil: restaurant.paidUntil,
+    monthlyPrice: restaurant.monthlyPrice,
+    daysRemaining: Math.max(0, Math.ceil((trialEndsAt - Date.now()) / 86400000)),
+  });
+}
+
 import { sendLineNotification } from "../services/lineNotify.service.js";
 
 // Fields a staff member is allowed to change about their own restaurant.
@@ -132,6 +151,12 @@ const RESTAURANT_FIELDS = [
   "pricingMode",
   "buffetPricePerPerson",
   "buffetDurationMinutes",
+  "buffetAdultPrice",
+  "buffetChildPrice",
+  "buffetChildMaxAge",
+  "buffetOvertimeFeePerPerson",
+  "buffetDepositPerPerson",
+  "buffetPackages",
   "lineNotifyToken",
 ];
 

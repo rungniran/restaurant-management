@@ -2,8 +2,8 @@
   <div class="page setup-page">
     <div class="setup-header">
       <div>
-        <p class="eyebrow">Owner Onboarding</p>
-        <h2 class="display">Setup Wizard</h2>
+        <p class="eyebrow">เริ่มต้นใช้งาน</p>
+        <h2 class="display">ตั้งค่าร้าน</h2>
       </div>
       <div class="header-actions">
         <button
@@ -19,11 +19,20 @@
 
     <div v-if="loading" class="empty">กำลังโหลดข้อมูลร้าน...</div>
     <div v-else class="wizard-wrap">
+      <div v-if="subscription" class="subscription-card card" :class="{ expired: subscription.status === 'past_due' }">
+        <div>
+          <strong>{{ subscription.status === 'past_due' ? 'ช่วงทดลองใช้ฟรีหมดแล้ว' : 'ทดลองใช้ฟรี 3 เดือน' }}</strong>
+          <p v-if="subscription.status === 'past_due'">กรุณาเลือกแพ็กเกจเพื่อเปิดใช้งานระบบต่อ</p>
+          <p v-else>เหลือเวลาใช้งานฟรีอีก {{ subscription.daysRemaining }} วัน · หมดวันที่ {{ formatDate(subscription.trialEndsAt) }}</p>
+        </div>
+        <span class="subscription-price">฿{{ subscription.monthlyPrice }}/เดือน</span>
+      </div>
+
       <div class="wizard-card card">
         <div class="wizard-top">
           <div>
             <h3>{{ restaurant?.displayName || restaurant?.name || "ร้าน บุพเฟ่" }}</h3>
-            <p class="muted">ภาพรวมการตั้งค่าให้พร้อมเปิดร้าน</p>
+            <p class="muted">ตั้งค่าร้านให้พร้อมเปิดบริการ และกลับมาแก้ไขข้อมูลได้ภายหลัง</p>
           </div>
           <div class="progress-box">
             <strong>{{ progress }}%</strong>
@@ -110,8 +119,28 @@
               <input v-model.number="form.buffetPricePerPerson" type="number" min="1" required placeholder="เช่น 299" />
             </div>
             <div>
+              <label>ราคาผู้ใหญ่ (บาท)</label>
+              <input v-model.number="form.buffetAdultPrice" type="number" min="1" placeholder="ใช้ราคาต่อท่านถ้าเว้นว่าง" />
+            </div>
+            <div>
+              <label>ราคาเด็ก (บาท)</label>
+              <input v-model.number="form.buffetChildPrice" type="number" min="0" placeholder="เช่น 149" />
+            </div>
+            <div>
+              <label>เด็กอายุไม่เกิน (ปี)</label>
+              <input v-model.number="form.buffetChildMaxAge" type="number" min="1" max="18" />
+            </div>
+            <div>
               <label>ระยะเวลากินบุฟเฟต์ (นาที)</label>
               <input v-model.number="form.buffetDurationMinutes" type="number" min="15" max="1440" required placeholder="เช่น 90" />
+            </div>
+            <div>
+              <label>ค่าต่อเวลา / คน / 30 นาที</label>
+              <input v-model.number="form.buffetOvertimeFeePerPerson" type="number" min="0" placeholder="เช่น 50" />
+            </div>
+            <div>
+              <label>มัดจำ / คน (บาท)</label>
+              <input v-model.number="form.buffetDepositPerPerson" type="number" min="0" placeholder="เช่น 100" />
             </div>
           </template>
           <div class="full-width">
@@ -149,6 +178,7 @@ const testingLine = ref(false);
 const restaurant = ref(null);
 const progress = ref(0);
 const steps = ref([]);
+const subscription = ref(null);
 
 const form = ref({
   name: "",
@@ -163,6 +193,11 @@ const form = ref({
   pricingMode: "normal",
   buffetPricePerPerson: 0,
   buffetDurationMinutes: 90,
+  buffetAdultPrice: 0,
+  buffetChildPrice: 0,
+  buffetChildMaxAge: 12,
+  buffetOvertimeFeePerPerson: 0,
+  buffetDepositPerPerson: 0,
   lineNotifyToken: "",
 });
 
@@ -182,6 +217,8 @@ async function fetchSetupStatus() {
       api.get("/restaurant/setup-status"),
       api.get("/restaurant/me"),
     ]);
+    const { data: subscriptionData } = await api.get("/restaurant/subscription");
+    subscription.value = subscriptionData;
     restaurant.value = meData || statusData.restaurant;
     steps.value = statusData.steps || [];
     progress.value = statusData.progress || 0;
@@ -199,6 +236,11 @@ async function fetchSetupStatus() {
         pricingMode: restaurant.value.pricingMode || "normal",
         buffetPricePerPerson: Number(restaurant.value.buffetPricePerPerson || 0),
         buffetDurationMinutes: Number(restaurant.value.buffetDurationMinutes || 90),
+        buffetAdultPrice: Number(restaurant.value.buffetAdultPrice || 0),
+        buffetChildPrice: Number(restaurant.value.buffetChildPrice || 0),
+        buffetChildMaxAge: Number(restaurant.value.buffetChildMaxAge || 12),
+        buffetOvertimeFeePerPerson: Number(restaurant.value.buffetOvertimeFeePerPerson || 0),
+        buffetDepositPerPerson: Number(restaurant.value.buffetDepositPerPerson || 0),
         lineNotifyToken: restaurant.value.lineNotifyToken || "",
       };
     }
@@ -207,6 +249,10 @@ async function fetchSetupStatus() {
   } finally {
     loading.value = false;
   }
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleDateString("th-TH", { dateStyle: "medium" }) : "-";
 }
 
 async function testLine() {
@@ -294,6 +340,29 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1.1fr 1.4fr;
   gap: 20px;
+}
+
+.subscription-card {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-color: rgba(224, 163, 61, 0.5);
+}
+.subscription-card p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.subscription-card.expired {
+  border-color: var(--danger);
+}
+.subscription-price {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .wizard-card {

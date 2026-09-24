@@ -175,7 +175,7 @@ function confirmAdd() {
   flex-shrink: 0;
 }
 .price-row {
-  font-family: "Chonburi", serif;
+  font-family: "Google Sans", "Google Sans Text", "Noto Sans Thai", sans-serif;
   color: var(--marigold-deep);
   font-size: 20px;
   margin: 10px 0;

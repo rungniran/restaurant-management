@@ -132,7 +132,7 @@ function payOrderNow(order) {
 }
 .order-num {
   font-weight: 700;
-  font-family: "Chonburi", serif;
+  font-family: "Google Sans", "Google Sans Text", "Noto Sans Thai", sans-serif;
   color: var(--forest-deep);
 }
 .order-item {

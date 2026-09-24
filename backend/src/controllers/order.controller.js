@@ -1,10 +1,12 @@
 import Order from "../models/Order.js";
 import MenuItem from "../models/MenuItem.js";
+import InventoryItem from "../models/InventoryItem.js";
 import Table from "../models/Table.js";
 import Restaurant from "../models/Restaurant.js";
 import { sendLineNotification } from "../services/lineNotify.service.js";
 import { emitNewOrder, emitOrderUpdated, emitTableStatus } from "../sockets/index.js";
 import { sessionCutoff } from "../utils/session.js";
+import { isSubscriptionActive, subscriptionError } from "../utils/subscription.js";
 
 const ITEM_STATUS_TRANSITIONS = {
   new: ["accepted", "cancelled"],
@@ -35,6 +37,7 @@ export async function createOrder(req, res) {
 
   const restaurant = await Restaurant.findById(table.restaurantId);
   if (!restaurant) return res.status(404).json({ error: "ไม่พบร้านนี้" });
+  if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
   if (!restaurant.isOpen) {
     return res.status(409).json({ error: "ร้านปิดอยู่ ยังไม่สามารถรับออเดอร์ได้" });
   }
@@ -64,6 +67,26 @@ export async function createOrder(req, res) {
   const menuItemIds = items.map((i) => i.menuItemId);
   const menuItems = await MenuItem.find({ _id: { $in: menuItemIds }, restaurantId: table.restaurantId });
   const menuMap = new Map(menuItems.map((m) => [String(m._id), m]));
+
+  const ingredientDemand = new Map();
+  for (const reqItem of items) {
+    const menuItem = menuMap.get(String(reqItem.menuItemId));
+    const qty = Math.max(1, Number(reqItem.quantity) || 1);
+    for (const recipeLine of menuItem?.recipe || []) {
+      const key = String(recipeLine.inventoryItemId);
+      ingredientDemand.set(key, (ingredientDemand.get(key) || 0) + Number(recipeLine.quantity || 0) * qty);
+    }
+  }
+  if (ingredientDemand.size) {
+    const inventory = await InventoryItem.find({ _id: { $in: [...ingredientDemand.keys()] }, restaurantId: table.restaurantId, isActive: true });
+    const inventoryMap = new Map(inventory.map((item) => [String(item._id), item]));
+    for (const [id, needed] of ingredientDemand) {
+      const stockItem = inventoryMap.get(id);
+      if (!stockItem || stockItem.stock < needed) {
+        return res.status(409).json({ error: `วัตถุดิบ ${stockItem?.name || "บางรายการ"} ไม่เพียงพอ` });
+      }
+    }
+  }
 
   const orderItems = [];
   let subtotal = 0;
@@ -109,6 +132,7 @@ export async function createOrder(req, res) {
       menuItemId: menuItem._id,
       name: menuItem.name,
       price: menuItem.price,
+      costPrice: menuItem.costPrice || 0,
       quantity: qty,
       selectedOptions,
       note: reqItem.note || "",
@@ -127,6 +151,10 @@ export async function createOrder(req, res) {
     subtotal,
     total: subtotal, // discount/serviceCharge/vat applied at checkout time
   });
+
+  for (const [id, needed] of ingredientDemand) {
+    await InventoryItem.updateOne({ _id: id, restaurantId: table.restaurantId }, { $inc: { stock: -needed } });
+  }
 
   if (startingNewSession) emitTableStatus(table.restaurantId, table);
 

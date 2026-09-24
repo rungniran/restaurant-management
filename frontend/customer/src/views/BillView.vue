@@ -18,7 +18,7 @@
         <div class="total-preview card">
           <div v-if="billSummary.buffetEnabled">
             <span>บุฟเฟต์รายหัว</span>
-            <small>ราคา {{ billSummary.buffetPricePerPerson }} บาท / คน</small>
+            <small>ผู้ใหญ่ {{ billSummary.buffetAdultPrice || billSummary.buffetPricePerPerson }} บาท / คน · เด็ก {{ billSummary.buffetChildPrice || billSummary.buffetAdultPrice || billSummary.buffetPricePerPerson }} บาท</small>
           </div>
           <template v-else>
             <div>
@@ -62,13 +62,25 @@
 
         <!-- buffet per head -->
         <div v-if="billSummary.buffetEnabled && mode === 'buffet'" class="mode-panel card">
-          <p class="mode-desc">ชำระแบบบุฟเฟ่ต์รายหัว ราคาต่อคน {{ billSummary.buffetPricePerPerson }} บาท</p>
+          <p class="mode-desc">เลือกจำนวนผู้ใหญ่และเด็ก ระบบจะคำนวณราคาให้ตามร้านตั้งค่า</p>
+          <label class="guest-input">ผู้ใหญ่
+            <input v-model.number="buffetAdults" type="number" min="0" max="50" />
+          </label>
+          <label class="guest-input">เด็ก (ไม่เกิน {{ billSummary.buffetChildMaxAge || 12 }} ปี)
+            <input v-model.number="buffetChildren" type="number" min="0" max="50" />
+          </label>
+          <label v-if="billSummary.buffetOvertimeFeePerPerson" class="guest-input">ต่อเวลา (นาที)
+            <select v-model.number="buffetOvertimeMinutes">
+              <option :value="0">ไม่ต่อเวลา</option>
+              <option :value="30">30 นาที</option>
+              <option :value="60">60 นาที</option>
+              <option :value="90">90 นาที</option>
+            </select>
+          </label>
           <div class="split-count-row">
-            <button @click="buffetHeadCount = Math.max(1, buffetHeadCount - 1)">−</button>
-            <span>{{ buffetHeadCount }} คน</span>
-            <button @click="buffetHeadCount = Math.min(50, buffetHeadCount + 1)">+</button>
+            <span>{{ buffetGuestCount }} คน</span>
           </div>
-          <p class="per-person">รวมทั้งหมด ≈ ฿{{ buffetTotal }} </p>
+          <p class="per-person">รวมทั้งหมด ≈ ฿{{ buffetTotal }} <small v-if="billSummary.buffetDepositPerPerson">รวมมัดจำแล้ว</small></p>
           <button class="btn-primary full-w" :disabled="requesting" @click="payBuffet">
             {{ requesting ? "กำลังสร้าง QR..." : `ชำระบุฟเฟ่ต์ · ฿${buffetTotal}` }}
           </button>
@@ -182,7 +194,9 @@ const loadingSummary = ref(true);
 const billSummary = ref({ orders: [], subtotal: 0, perTable: [] });
 const mode = ref("full");
 const splitCount = ref(2);
-const buffetHeadCount = ref(1);
+const buffetAdults = ref(1);
+const buffetChildren = ref(0);
+const buffetOvertimeMinutes = ref(0);
 const pickedItems = ref([]); // [{orderId, itemId}]
 const requesting = ref(false);
 const error = ref(null);
@@ -239,9 +253,16 @@ const estPerPerson = computed(() => {
 });
 
 const buffetTotal = computed(() => {
-  const rate = Number(billSummary.value.buffetPricePerPerson || 0);
-  return +(rate * buffetHeadCount.value).toFixed(2);
+  const adults = Number(billSummary.value.buffetAdultPrice || billSummary.value.buffetPricePerPerson || 0);
+  const children = Number(billSummary.value.buffetChildPrice || adults);
+  const guests = buffetGuestCount.value;
+  const base = adults * buffetAdults.value + children * buffetChildren.value;
+  const overtime = Number(billSummary.value.buffetOvertimeFeePerPerson || 0) * guests * (buffetOvertimeMinutes.value / 30);
+  const deposit = Number(billSummary.value.buffetDepositPerPerson || 0) * guests;
+  return +(base + overtime + deposit).toFixed(2);
 });
+
+const buffetGuestCount = computed(() => Math.max(0, Number(buffetAdults.value || 0) + Number(buffetChildren.value || 0)));
 
 const pickedTotal = computed(() => {
   let total = 0;
@@ -315,7 +336,12 @@ async function payBuffet() {
   requesting.value = true;
   error.value = null;
   try {
-    const { data } = await api.post("/payment/buffet", { qrToken: props.qrToken, headCount: buffetHeadCount.value });
+    const { data } = await api.post("/payment/buffet", {
+      qrToken: props.qrToken,
+      adults: buffetAdults.value,
+      children: buffetChildren.value,
+      overtimeMinutes: buffetOvertimeMinutes.value,
+    });
     activePayments.value = [data.payment];
     await nextTick();
     renderAllQr();

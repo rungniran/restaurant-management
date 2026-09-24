@@ -53,7 +53,7 @@ export async function deleteCategory(req, res) {
 // excludes restaurantId — spreading req.body directly (the old behaviour)
 // let a client pass its own restaurantId and either create/reparent an item
 // onto a different tenant's restaurant.
-const MENU_ITEM_FIELDS = ["categoryId", "name", "description", "price", "imageUrl", "isAvailable", "station", "options"];
+const MENU_ITEM_FIELDS = ["categoryId", "name", "description", "price", "costPrice", "recipe", "imageUrl", "isAvailable", "station", "options"];
 
 function pickMenuItemFields(body) {
   const updates = {};

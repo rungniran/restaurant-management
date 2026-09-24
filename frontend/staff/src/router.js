@@ -12,6 +12,7 @@ import DashboardView from "./views/DashboardView.vue";
 import SetupWizardView from "./views/SetupWizardView.vue";
 import ChangePasswordView from "./views/ChangePasswordView.vue";
 import StaffManageView from "./views/StaffManageView.vue";
+import InventoryView from "./views/InventoryView.vue";
 
 const routes = [
   { path: "/", name: "landing", component: LandingView },
@@ -26,6 +27,7 @@ const routes = [
   { path: "/menu", name: "menu", component: MenuManageView, meta: { roles: ["owner", "manager"] } },
   { path: "/kitchen", name: "kitchen", component: BoardView, meta: { roles: ["owner", "manager", "kitchen"] } },
   { path: "/staff-accounts", name: "staffAccounts", component: StaffManageView, meta: { roles: ["owner", "manager"] } },
+  { path: "/inventory", name: "inventory", component: InventoryView, meta: { roles: ["owner", "manager"] } },
 ];
 
 const router = createRouter({
@@ -37,6 +39,18 @@ router.beforeEach((to) => {
   const auth = useAuthStore();
   const publicRoutes = ["landing", "login", "signup"];
   const isOwnerFlow = auth.staff && ["owner", "manager"].includes(auth.staff.role);
+
+  // The marketing landing page should remain visible even after a staff login.
+  if (to.name === "landing") {
+    // Landing is a public entry point. Clear a stale session here so an old
+    // token cannot trigger an API 401 redirect while the page is opening.
+    if (auth.isLoggedIn) auth.logout();
+    return;
+  }
+
+  // Signup must remain directly reachable on refresh, even when an old or
+  // incomplete session is still present in localStorage.
+  if (to.name === "signup") return;
 
   if (!auth.isLoggedIn && !publicRoutes.includes(to.name)) {
     return { name: "landing" };

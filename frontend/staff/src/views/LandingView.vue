@@ -20,30 +20,30 @@
 
     <main class="hero">
       <div class="hero-copy">
-        <span class="eyebrow">Luxury Restaurant OS</span>
-        <h1>จาก <span>ร้านเล็ก</span> สู่ร้านที่ลูกค้าอยากกลับมาซ้ำ</h1>
+        <span class="eyebrow">QR Restaurant OS สำหรับร้านไทย</span>
+        <h1>คุ้มกว่า POS สำหรับร้าน <span>บุฟเฟต์และร้านนั่งทาน</span></h1>
         <p>
-          ระบบจัดการร้านอาหารครบวงจรสำหรับร้าน บุพเฟ่: เมนู QR order, จัดการโต๊ะ, ครัว real-time,
-          การชำระเงิน และรายงานยอดขายในแอปเดียวที่ทำให้ร้านดูระดับมืออาชีพ
+          เริ่มรับออเดอร์ผ่าน QR ได้โดยไม่ต้องซื้อเครื่อง POS เพิ่ม ลูกค้าสั่งเอง ครัวเห็นทันที
+          แบ่งบิลง่าย และจัดการบุฟเฟต์ ผู้ใหญ่ เด็ก เวลา และมัดจำได้ในระบบเดียว
         </p>
 
         <div class="cta-row">
-          <button class="btn btn-accent large" @click="router.push({ name: 'signup' })">สร้างร้านของคุณ</button>
+          <button class="btn btn-accent large" @click="router.push({ name: 'signup' })">ทดลองใช้ฟรี 3 เดือน</button>
           <button class="btn btn-ghost large" @click="router.push({ name: 'login' })">เข้าสู่ระบบ</button>
         </div>
 
         <div class="mini-stats">
           <div>
-            <strong>3.2x</strong>
-            <small>เพิ่มยอดสั่งผ่าน QR</small>
+            <strong>฿0</strong>
+            <small>ค่าใช้ระบบ 3 เดือนแรก</small>
           </div>
           <div>
-            <strong>24/7</strong>
-            <small>จัดการร้านแบบอัตโนมัติ</small>
+            <strong>1 QR</strong>
+            <small>ต่อโต๊ะ ไม่ต้องซื้อเครื่องเพิ่ม</small>
           </div>
           <div>
-            <strong>1 แอป</strong>
-            <small>คุมทุกอย่างได้พร้อมกัน</small>
+            <strong>4 จุด</strong>
+            <small>ออเดอร์ ครัว โต๊ะ และบิล</small>
           </div>
         </div>
       </div>
@@ -94,6 +94,38 @@
         </div>
       </div>
     </main>
+
+    <section class="value-section">
+      <div class="value-heading">
+        <span class="eyebrow alt">คุ้มตรงไหน</span>
+        <h2>เริ่มเล็กได้ แต่ควบคุมร้านได้ครบ</h2>
+        <p>ไม่บังคับให้ร้านซื้อฮาร์ดแวร์ก้อนใหญ่ก่อนเห็นผล ใช้มือถือหรือแท็บเล็ตที่มีอยู่ แล้วค่อยขยายตามร้าน</p>
+      </div>
+      <div class="comparison-grid">
+        <div class="comparison-card highlight">
+          <span class="comparison-label">เหมาะกับร้านบุฟเฟต์</span>
+          <h3>Burapa Dining</h3>
+          <ul>
+            <li>QR สั่งอาหารจากโต๊ะ</li>
+            <li>ครัว real-time แยก station</li>
+            <li>บุฟเฟต์ผู้ใหญ่/เด็กและจับเวลา</li>
+            <li>หารบิลและโต๊ะรวม</li>
+            <li>สต็อกและต้นทุนอาหาร</li>
+          </ul>
+        </div>
+        <div class="comparison-card">
+          <span class="comparison-label">POS เต็มระบบ</span>
+          <h3>เหมาะเมื่อร้านพร้อมลงทุนเพิ่ม</h3>
+          <ul>
+            <li>มักเริ่มด้วยเครื่องและอุปกรณ์เฉพาะ</li>
+            <li>เหมาะกับแคชเชียร์และบัญชีเต็มรูปแบบ</li>
+            <li>ฟีเจอร์บุฟเฟต์อาจต้องตั้งค่าเพิ่ม</li>
+            <li>ต้นทุนเริ่มต้นและการติดตั้งสูงกว่าได้</li>
+            <li>เหมาะกับร้านที่ต้องการระบบหลังบ้านลึก</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
     <section class="features">
       <div class="feature-card card">
@@ -444,6 +476,71 @@ const router = useRouter();
   gap: 18px;
 }
 
+.value-section {
+  max-width: 980px;
+  margin: 72px auto 0;
+}
+.value-heading {
+  max-width: 680px;
+  margin-bottom: 24px;
+}
+.value-heading h2 {
+  margin: 12px 0 10px;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+}
+.value-heading p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.comparison-card {
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  background: rgba(19,23,31,0.88);
+}
+.comparison-card.highlight {
+  border-color: rgba(224,163,61,0.55);
+  background: linear-gradient(145deg, rgba(224,163,61,0.14), rgba(19,23,31,0.92));
+  box-shadow: 0 18px 40px rgba(0,0,0,0.2);
+}
+.comparison-label {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.comparison-card h3 {
+  margin: 10px 0 16px;
+  font-size: 1.25rem;
+}
+.comparison-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 11px;
+}
+.comparison-card li {
+  color: #c6ccd7;
+  line-height: 1.5;
+  padding-left: 22px;
+  position: relative;
+}
+.comparison-card li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: 800;
+}
+
 .feature-card {
   padding: 24px 20px;
   background: rgba(19,23,31,0.9);
@@ -524,7 +621,8 @@ const router = useRouter();
 @media (max-width: 900px) {
   .hero,
   .features,
-  .timeline {
+  .timeline,
+  .comparison-grid {
     grid-template-columns: 1fr;
   }
 }

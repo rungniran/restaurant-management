@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 import Staff from "../models/Staff.js";
+import Restaurant from "../models/Restaurant.js";
+import { isSubscriptionActive, subscriptionError } from "../utils/subscription.js";
 
 export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
@@ -23,6 +25,13 @@ export async function requireAuth(req, res, next) {
     // token instead of leaving it valid for up to 12h.
     if ((payload.tokenVersion || 0) !== (staff.tokenVersion || 0)) {
       return res.status(401).json({ error: "Session expired, please log in again" });
+    }
+
+    // Keep the billing-status endpoint available so an expired owner can see
+    // the next step, while paid/trial access controls all other staff APIs.
+    if (!["/subscription", "/setup-status", "/me"].includes(req.path)) {
+      const restaurant = await Restaurant.findById(staff.restaurantId).select("subscriptionStatus trialEndsAt paidUntil createdAt");
+      if (!isSubscriptionActive(restaurant)) return subscriptionError(res);
     }
 
     req.staff = {

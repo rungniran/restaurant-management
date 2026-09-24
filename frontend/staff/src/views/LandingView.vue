@@ -14,7 +14,7 @@
 
       <div class="top-actions">
         <button class="btn btn-ghost" @click="router.push({ name: 'login' })">เข้าสู่ระบบ</button>
-        <button class="btn btn-accent" @click="router.push({ name: 'signup' })">เริ่มต้นร้าน</button>
+        <button class="btn btn-accent" @click="router.push({ name: 'sales-mode' })">เริ่มต้นร้าน</button>
       </div>
     </header>
 
@@ -28,7 +28,7 @@
         </p>
 
         <div class="cta-row">
-          <button class="btn btn-accent large" @click="router.push({ name: 'signup' })">ทดลองใช้ฟรี 3 เดือน</button>
+          <button class="btn btn-accent large" @click="router.push({ name: 'sales-mode' })">ทดลองใช้ฟรี 3 เดือน</button>
           <button class="btn btn-ghost large" @click="router.push({ name: 'login' })">เข้าสู่ระบบ</button>
         </div>
 

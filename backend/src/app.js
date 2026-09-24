@@ -121,10 +121,9 @@ app.use("/api/staff/login", loginLimiter);
 app.use("/api/staff/login-google", loginLimiter);
 
 // createRestaurant (POST /api/restaurant) is a public, unauthenticated
-// endpoint that creates a new tenant + owner account and hands back a
-// generated password — without its own limiter, only the generic 300/min
-// API-wide limit stood between it and a script mass-creating restaurants
-// and owner accounts.
+// endpoint that creates a new tenant + owner account. Without its own limiter,
+// only the generic 300/min API-wide limit stood between it and a script
+// mass-creating restaurants and owner accounts.
 const createRestaurantLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 5, // 5 new restaurants per IP per hour

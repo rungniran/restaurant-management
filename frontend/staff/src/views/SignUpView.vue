@@ -2,7 +2,7 @@
   <div class="auth-page">
     <div class="auth-card card">
       <div class="topline">
-        <button class="btn btn-ghost small" @click="router.push({ name: 'landing' })">← กลับ</button>
+        <button class="btn btn-ghost small" @click="router.push({ name: 'sales-mode' })">← เปลี่ยนรูปแบบการขาย</button>
       </div>
 
       <h1 class="display">สมัครสมาชิก</h1>
@@ -17,6 +17,15 @@
           <div>
             <label>ชื่อสำหรับแสดง</label>
             <input v-model="form.displayName" placeholder="เช่น ร้านอร่อยดี Grill & Cafe" required />
+          </div>
+          <div>
+            <label>ชื่อผู้ใช้สำหรับเข้าสู่ระบบ</label>
+            <input v-model="form.username" placeholder="เช่น yangthai-owner" autocomplete="username" minlength="3" maxlength="30" required />
+          </div>
+          <p class="selected-mode">รูปแบบการขาย: {{ form.pricingMode === 'buffet' ? 'บุฟเฟต์' : 'ขายตามสั่งปกติ' }}</p>
+          <div>
+            <label>รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</label>
+            <input v-model="form.password" type="password" autocomplete="new-password" minlength="8" required />
           </div>
         </div>
 
@@ -44,11 +53,17 @@ const error = ref("");
 const form = ref({
   name: "",
   displayName: "",
+  username: "",
+  pricingMode: ["normal", "buffet"].includes(router.currentRoute.value.query.pricingMode)
+    ? router.currentRoute.value.query.pricingMode
+    : "normal",
+  password: "",
 });
 
 async function submit() {
-  if (!form.value.name || !form.value.displayName) {
-    error.value = "กรุณากรอกชื่อร้านและชื่อสำหรับแสดง";
+  form.value.username = form.value.username.trim().toLowerCase();
+  if (!form.value.name || !form.value.displayName || !form.value.username || form.value.password.length < 8) {
+    error.value = "กรุณากรอกข้อมูลให้ครบ และตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร";
     return;
   }
 
@@ -57,7 +72,7 @@ async function submit() {
 
   try {
     const { data } = await api.post("/restaurant", form.value);
-    const ok = await auth.login(data.owner.username, data.owner.password, data.restaurant._id);
+    const ok = await auth.login(form.value.username, form.value.password, data.restaurant._id);
     if (!ok) {
       throw new Error(auth.error || "เข้าสู่ระบบไม่สำเร็จ");
     }
@@ -132,6 +147,12 @@ textarea {
 .full {
   width: 100%;
   margin-top: 22px;
+}
+
+.selected-mode {
+  margin: 0;
+  color: var(--accent);
+  font-size: 13px;
 }
 
 .error-text {

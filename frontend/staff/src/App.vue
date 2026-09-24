@@ -44,7 +44,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
-const isLoginPage = computed(() => ["landing", "login", "signup", "change-password"].includes(route.name));
+const isLoginPage = computed(() => ["landing", "login", "signup", "sales-mode", "change-password"].includes(route.name));
 
 const ALL_NAV = [
   { name: "setup", to: "/setup", icon: "fa-rocket", label: "ตั้งค่าร้าน", roles: ["owner", "manager"] },

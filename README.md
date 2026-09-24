@@ -38,12 +38,12 @@ Kitchen Display (real-time, แยก station), เรียกพนักง�
 ### Flow ที่ใช้จริง
 
 1. เปิด landing page: `http://localhost:4000/staff/#/` หรือ `http://localhost:4000/staff`
-2. คลิก `สมัครสมาชิก`
-3. กรอกเพียงชื่อร้านและชื่อสำหรับแสดง
-4. ระบบจะสร้างร้านและ owner account ให้โดยอัตโนมัติ
+2. เลือกรูปแบบการขาย: ขายตามสั่งปกติ หรือบุฟเฟต์
+3. กรอกชื่อร้าน, ชื่อสำหรับแสดง, ชื่อผู้ใช้ และตั้งรหัสผ่านอย่างน้อย 8 ตัวอักษร
+4. ระบบจะสร้างร้านและ owner account โดยใช้ชื่อผู้ใช้, รหัสผ่าน และรูปแบบการขายที่เลือก
 5. หลังสมัครเสร็จ จะเข้าสู่หน้าตั้งค่าร้านครั้งแรกโดยตรง
 6. ในหน้าตั้งค่าร้านสามารถกรอกเบอร์โทร, ที่อยู่, โลโก้, เมนู, โต๊ะ, QR, พนักงาน,
-   ภาษี, รูปแบบบุฟเฟต์ และเปิด/ปิดร้านได้
+   ภาษี, รายละเอียดบุฟเฟต์ และเปิด/ปิดร้านได้
 
 > หมายเหตุ: ถ้าเป็นการรันแบบ backend serve ทุกอย่าง (production-style) หน้า landing และ signup จะอยู่ภายใน staff app เดียวกัน โดย route อยู่ใน Vue Router ของ `frontend/staff` และถูก serve ผ่าน `/staff`
 
@@ -277,3 +277,14 @@ npm start                 # backend serve API + ทั้งสอง frontend �
 production และเปิด HTTPS เพราะ Socket.io/QR payment ควรรันบน HTTPS เท่านั้น — เมื่อ frontend
 ถูกเสิร์ฟจาก backend เดียวกัน (same-origin) แล้ว ไม่จำเป็นต้องตั้ง `CORS_ORIGIN` ให้ครอบคลุมหลาย
 port อีกต่อไป (มีประโยชน์เฉพาะตอน dev แยก server เท่านั้น)
+
+### ทดลอง deploy ฟรีบน Render + MongoDB Atlas
+
+มี Blueprint ที่ `render.yaml` สำหรับสร้าง Render Web Service (region Singapore, แพ็กเกจ Free) โดย build frontend และ backend ใน service เดียว
+
+1. สร้าง MongoDB Atlas Free cluster และ database user แล้วเพิ่ม `0.0.0.0/0` ใน Network Access เพื่อให้ Render เชื่อมต่อได้
+2. คัดลอก Atlas connection string (`mongodb+srv://...`) และแทน `<password>` กับชื่อฐานข้อมูล
+3. บน Render เลือก **New → Blueprint**, เชื่อม repository นี้ และระบุ `MONGO_URI` เมื่อ Blueprint ขอค่า
+4. Render จะสร้าง `JWT_SECRET` และกำหนด `CORS_ORIGIN` จาก URL ของ service ให้อัตโนมัติ
+
+แพ็กเกจ Render Free จะพักเมื่อไม่มีทราฟฟิก และ filesystem ของ service เป็นแบบชั่วคราว ไฟล์รูปที่อัปโหลดอาจหายเมื่อ restart หรือ deploy ใหม่ เหมาะสำหรับเดโม/ทดลอง; หากใช้งานกับร้านจริงให้ย้ายไฟล์ไป object storage และใช้ service/database ที่มี uptime กับ backup เหมาะสม

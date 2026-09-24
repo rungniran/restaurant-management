@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import Restaurant from "../models/Restaurant.js";
 import Staff from "../models/Staff.js";
 import Category from "../models/Category.js";
@@ -7,63 +6,51 @@ import MenuItem from "../models/MenuItem.js";
 import Table from "../models/Table.js";
 import { getTrialEndsAt } from "../utils/subscription.js";
 
-function slugify(value) {
-  return (value || "restaurant")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "restaurant";
-}
-
-// Generates a random, human-typeable temporary password (e.g. "kx7m-p2qw").
-// This replaces the old hardcoded "owner123" default, which was identical
-// for every new restaurant and never had to be changed — an easy target for
-// credential stuffing once one restaurant's username pattern was known.
-function generateTempPassword() {
-  return crypto.randomBytes(4).toString("hex").match(/.{1,4}/g).join("-");
-}
-
 // POST /api/restaurant  (public) - create a new restaurant with owner account
 export async function createRestaurant(req, res) {
-  const { name, displayName, phone, address, logoUrl } = req.body || {};
+  const { name, displayName, phone, address, logoUrl, username, password, pricingMode } = req.body || {};
   if (!name || !displayName) {
     return res.status(400).json({ error: "กรุณากรอกชื่อร้านและชื่อสำหรับแสดง" });
+  }
+  const normalizedUsername = typeof username === "string" ? username.trim().toLowerCase() : "";
+  if (!/^[a-z0-9._-]{3,30}$/.test(normalizedUsername)) {
+    return res.status(400).json({ error: "ชื่อผู้ใช้ต้องยาว 3-30 ตัว และใช้ได้เฉพาะ a-z, 0-9, จุด, ขีดกลาง หรือขีดล่าง" });
+  }
+  if (await Staff.exists({ username: normalizedUsername })) {
+    return res.status(409).json({ error: "ชื่อผู้ใช้นี้มีคนใช้แล้ว กรุณาเลือกชื่ออื่น" });
+  }
+  if (typeof password !== "string" || password.length < 8) {
+    return res.status(400).json({ error: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" });
+  }
+  const selectedPricingMode = pricingMode || "normal";
+  if (!["normal", "buffet"].includes(selectedPricingMode)) {
+    return res.status(400).json({ error: "รูปแบบการขายไม่ถูกต้อง" });
   }
 
   const restaurant = await Restaurant.create({
     name,
     displayName,
+    pricingMode: selectedPricingMode,
     phone: phone || "",
     address: address || "",
     logoUrl: logoUrl || "",
   });
 
-  let baseUsername = `${slugify(name)}-owner`;
-  let username = baseUsername;
-  let counter = 1;
-
-  while (await Staff.exists({ username })) {
-    username = `${baseUsername}-${counter}`;
-    counter += 1;
-  }
-
-  const tempPassword = generateTempPassword();
-  const passwordHash = await bcrypt.hash(tempPassword, 10);
+  const passwordHash = await bcrypt.hash(password, 10);
   const owner = await Staff.create({
     restaurantId: restaurant._id,
     name: displayName,
-    username,
+    username: normalizedUsername,
     passwordHash,
     role: "owner",
-    mustChangePassword: true,
+    mustChangePassword: false,
   });
 
   res.status(201).json({
     restaurant,
     owner: {
       id: owner._id,
-      username,
-      password: tempPassword,
+      username: normalizedUsername,
       role: owner.role,
     },
   });

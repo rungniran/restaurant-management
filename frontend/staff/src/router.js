@@ -3,6 +3,7 @@ import { useAuthStore } from "./stores/auth";
 import LandingView from "./views/LandingView.vue";
 import LoginView from "./views/LoginView.vue";
 import SignUpView from "./views/SignUpView.vue";
+import SalesModeView from "./views/SalesModeView.vue";
 import TablesView from "./views/TablesView.vue";
 import ReservationsView from "./views/ReservationsView.vue";
 import PaymentHistoryView from "./views/PaymentHistoryView.vue";
@@ -18,6 +19,7 @@ const routes = [
   { path: "/", name: "landing", component: LandingView },
   { path: "/login", name: "login", component: LoginView },
   { path: "/signup", name: "signup", component: SignUpView },
+  { path: "/sales-mode", name: "sales-mode", component: SalesModeView },
   { path: "/change-password", name: "change-password", component: ChangePasswordView },
   { path: "/setup", name: "setup", component: SetupWizardView, meta: { roles: ["owner", "manager"] } },
   { path: "/dashboard", name: "dashboard", component: DashboardView, meta: { roles: ["owner", "manager"] } },
@@ -37,7 +39,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore();
-  const publicRoutes = ["landing", "login", "signup"];
+  const publicRoutes = ["landing", "login", "signup", "sales-mode"];
   const isOwnerFlow = auth.staff && ["owner", "manager"].includes(auth.staff.role);
 
   // The marketing landing page should remain visible even after a staff login.
@@ -50,7 +52,10 @@ router.beforeEach((to) => {
 
   // Signup must remain directly reachable on refresh, even when an old or
   // incomplete session is still present in localStorage.
-  if (to.name === "signup") return;
+  if (to.name === "signup") {
+    if (!["normal", "buffet"].includes(to.query.pricingMode)) return { name: "sales-mode" };
+    return;
+  }
 
   if (!auth.isLoggedIn && !publicRoutes.includes(to.name)) {
     return { name: "landing" };

@@ -85,12 +85,12 @@ watch(
 );
 
 onMounted(async () => {
-  try {
-    const { data } = await api.get("/service-request");
-    tablesStore.pendingServiceRequests = data;
-  } catch {
-    // ignore
-  }
+  // try {
+  //   const { data } = await api.get("/service-request");
+  //   tablesStore.pendingServiceRequests = data;
+  // } catch {
+  //   // ignore
+  // }
 });
 
 async function acknowledge(id) {

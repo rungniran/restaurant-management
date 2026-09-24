@@ -5,10 +5,10 @@
 
     <header class="topbar">
       <div class="brand-wrap">
-        <div class="brand-icon">B</div>
+        <div class="brand-icon">Q</div>
         <div>
-          <div class="brand-name">บุพเฟ่</div>
-          <small>Burapa Dining</small>
+          <div class="brand-name">QR ร้าน</div>
+          <small>ระบบจัดการร้านอาหาร</small>
         </div>
       </div>
 
@@ -20,11 +20,11 @@
 
     <main class="hero">
       <div class="hero-copy">
-        <span class="eyebrow">QR Restaurant OS สำหรับร้านไทย</span>
-        <h1>คุ้มกว่า POS สำหรับร้าน <span>บุฟเฟต์และร้านนั่งทาน</span></h1>
+        <span class="eyebrow">ระบบจัดการร้านอาหาร ใช้งานผ่าน QR</span>
+        <h1>รับออเดอร์เป็นระบบ <span>ดูแลร้านได้ง่ายขึ้น</span></h1>
         <p>
-          เริ่มรับออเดอร์ผ่าน QR ได้โดยไม่ต้องซื้อเครื่อง POS เพิ่ม ลูกค้าสั่งเอง ครัวเห็นทันที
-          แบ่งบิลง่าย และจัดการบุฟเฟต์ ผู้ใหญ่ เด็ก เวลา และมัดจำได้ในระบบเดียว
+          ให้ลูกค้าสแกน QR เพื่อดูเมนูและสั่งอาหาร ส่งออเดอร์เข้าจอครัวแบบเรียลไทม์
+          พร้อมจัดการโต๊ะ เมนู การชำระเงิน และบุฟเฟต์ได้ในที่เดียว
         </p>
 
         <div class="cta-row">
@@ -34,16 +34,16 @@
 
         <div class="mini-stats">
           <div>
-            <strong>฿0</strong>
-            <small>ค่าใช้ระบบ 3 เดือนแรก</small>
+            <strong>3 เดือน</strong>
+            <small>ทดลองใช้ฟรีสำหรับร้านใหม่</small>
           </div>
           <div>
-            <strong>1 QR</strong>
-            <small>ต่อโต๊ะ ไม่ต้องซื้อเครื่องเพิ่ม</small>
+            <strong>2 รูปแบบ</strong>
+            <small>ตามสั่งและบุฟเฟต์</small>
           </div>
           <div>
-            <strong>4 จุด</strong>
-            <small>ออเดอร์ ครัว โต๊ะ และบิล</small>
+            <strong>QR ต่อโต๊ะ</strong>
+            <small>ลูกค้าสั่งจากมือถือ</small>
           </div>
         </div>
       </div>
@@ -58,20 +58,20 @@
         <div class="mockup">
           <div class="mock-top">
             <div>
-              <small>ร้าน บุพเฟ่</small>
-              <strong>Burapa Bistro</strong>
+              <small>ตัวอย่างหน้าจอจัดการร้าน</small>
+              <strong>ออเดอร์และโต๊ะ</strong>
             </div>
-            <span class="pill">Open</span>
+            <span class="pill">พร้อมใช้งาน</span>
           </div>
 
           <div class="stats-row">
             <div>
-              <strong>1,284</strong>
-              <small>ออเดอร์/เดือน</small>
+              <strong>จอครัว</strong>
+              <small>รับรายการแบบเรียลไทม์</small>
             </div>
             <div>
-              <strong>94%</strong>
-              <small>สร้างรายได้ต่อโต๊ะ</small>
+              <strong>สรุปยอด</strong>
+              <small>ดูเมนูขายดีและช่วงเวลาขาย</small>
             </div>
           </div>
 
@@ -98,30 +98,28 @@
     <section class="value-section">
       <div class="value-heading">
         <span class="eyebrow alt">คุ้มตรงไหน</span>
-        <h2>เริ่มเล็กได้ แต่ควบคุมร้านได้ครบ</h2>
-        <p>ไม่บังคับให้ร้านซื้อฮาร์ดแวร์ก้อนใหญ่ก่อนเห็นผล ใช้มือถือหรือแท็บเล็ตที่มีอยู่ แล้วค่อยขยายตามร้าน</p>
+        <h2>เลือกใช้ให้ตรงกับวิธีขายของร้าน</h2>
+        <p>เริ่มจากรูปแบบการขายของคุณ แล้วตั้งค่าเมนู โต๊ะ และ QR ให้พร้อมก่อนเปิดรับออเดอร์</p>
       </div>
       <div class="comparison-grid">
         <div class="comparison-card highlight">
-          <span class="comparison-label">เหมาะกับร้านบุฟเฟต์</span>
-          <h3>Burapa Dining</h3>
+          <span class="comparison-label">คิดราคาตามรายการ</span>
+          <h3>ร้านอาหารตามสั่ง</h3>
           <ul>
-            <li>QR สั่งอาหารจากโต๊ะ</li>
-            <li>ครัว real-time แยก station</li>
-            <li>บุฟเฟต์ผู้ใหญ่/เด็กและจับเวลา</li>
-            <li>หารบิลและโต๊ะรวม</li>
-            <li>สต็อกและต้นทุนอาหาร</li>
+            <li>ลูกค้าสแกน QR เพื่อเลือกและสั่งเมนู</li>
+            <li>ส่งออเดอร์เข้าจอครัวแบบเรียลไทม์</li>
+            <li>รองรับการแยกบิลและชำระผ่าน PromptPay QR</li>
+            <li>ดูยอดขายและเมนูยอดนิยม</li>
           </ul>
         </div>
         <div class="comparison-card">
-          <span class="comparison-label">POS เต็มระบบ</span>
-          <h3>เหมาะเมื่อร้านพร้อมลงทุนเพิ่ม</h3>
+          <span class="comparison-label">คิดราคาต่อคน</span>
+          <h3>ร้านบุฟเฟต์</h3>
           <ul>
-            <li>มักเริ่มด้วยเครื่องและอุปกรณ์เฉพาะ</li>
-            <li>เหมาะกับแคชเชียร์และบัญชีเต็มรูปแบบ</li>
-            <li>ฟีเจอร์บุฟเฟต์อาจต้องตั้งค่าเพิ่ม</li>
-            <li>ต้นทุนเริ่มต้นและการติดตั้งสูงกว่าได้</li>
-            <li>เหมาะกับร้านที่ต้องการระบบหลังบ้านลึก</li>
+            <li>ตั้งราคาผู้ใหญ่ เด็ก และแพ็กเกจ</li>
+            <li>กำหนดเวลารับประทานและต่อเวลา</li>
+            <li>จัดการมัดจำและชำระค่าบุฟเฟต์</li>
+            <li>ลูกค้าสั่งเมนูจาก QR ที่โต๊ะ</li>
           </ul>
         </div>
       </div>
@@ -172,6 +170,35 @@
           <h4>ติดตามรายได้</h4>
           <p>ดูยอดขายและประสิทธิภาพแบบเรียลไทม์</p>
         </div>
+      </div>
+    </section>
+
+    <section class="faq-section">
+      <div class="section-header">
+        <span class="eyebrow alt">คำถามที่พบบ่อย</span>
+        <h2>เริ่มใช้งานอย่างไร?</h2>
+      </div>
+      <div class="faq-grid">
+        <article class="faq-card">
+          <h3>สมัครแล้วต้องทำอะไรต่อ?</h3>
+          <p>เลือกรูปแบบการขาย สร้างบัญชีร้าน แล้วตั้งค่าเมนูและโต๊ะเพื่อสร้าง QR ก่อนเปิดรับออเดอร์</p>
+        </article>
+        <article class="faq-card">
+          <h3>ร้านของฉันใช้ระบบนี้ได้ไหม?</h3>
+          <p>เริ่มได้ทั้งร้านอาหารตามสั่งและร้านบุฟเฟต์ โดยเลือกรูปแบบที่ตรงกับวิธีคิดเงินของร้านตอนสมัคร</p>
+        </article>
+        <article class="faq-card">
+          <h3>ทดลองใช้งานนานเท่าไร?</h3>
+          <p>ร้านใหม่ทดลองใช้ฟรี 3 เดือน หลังจากนั้นต้องเปิดใช้แพ็กเกจแบบชำระเงินเพื่อใช้งานต่อ</p>
+        </article>
+      </div>
+      <div class="closing-cta card">
+        <div>
+          <span class="eyebrow">พร้อมเริ่มหรือยัง?</span>
+          <h2>ลองจัดการออเดอร์ของร้านคุณ</h2>
+          <p>สมัครร้าน เลือกรูปแบบการขาย แล้วเริ่มตั้งค่าได้เลย</p>
+        </div>
+        <button class="btn btn-accent large" @click="router.push({ name: 'sales-mode' })">เริ่มทดลองใช้ฟรี 3 เดือน</button>
       </div>
     </section>
   </div>
@@ -574,6 +601,42 @@ const router = useRouter();
   margin-top: 52px;
 }
 
+.faq-section {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 64px auto 0;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.faq-card {
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(19,23,31,0.88);
+}
+
+.faq-card h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.faq-card p { margin: 0; color: var(--muted); line-height: 1.7; }
+
+.closing-cta {
+  margin-top: 28px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: linear-gradient(120deg, rgba(224,163,61,0.14), rgba(19,23,31,0.92));
+}
+
+.closing-cta h2 { margin: 12px 0 6px; }
+.closing-cta p { margin: 0; color: var(--muted); }
+
 .section-header {
   text-align: center;
   margin-bottom: 24px;
@@ -622,8 +685,11 @@ const router = useRouter();
   .hero,
   .features,
   .timeline,
-  .comparison-grid {
+  .comparison-grid,
+  .faq-grid {
     grid-template-columns: 1fr;
   }
+
+  .closing-cta { align-items: flex-start; flex-direction: column; }
 }
 </style>

@@ -21,3 +21,25 @@ services:
           type: web
           name: restaurant-management
           envVarKey: RENDER_EXTERNAL_URL
+      - key: PLATFORM_ADMIN_ORIGIN
+        fromService:
+          type: web
+          name: restaurant-platform-admin
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: restaurant-platform-admin
+    runtime: static
+    rootDir: frontend/platform-admin
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: restaurant-management
+          envVarKey: RENDER_EXTERNAL_URL

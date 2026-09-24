@@ -24,6 +24,7 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import reservationRoutes from "./routes/reservation.routes.js";
 import inventoryRoutes from "./routes/inventory.routes.js";
+import platformRoutes from "./routes/platform.routes.js";
 
 const app = express();
 
@@ -35,7 +36,10 @@ if (!process.env.CORS_ORIGIN && process.env.NODE_ENV === "production") {
   console.error("[Config] CORS_ORIGIN must be set explicitly in production. Refusing to start with a wildcard origin.");
   process.exit(1);
 }
-const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5175").split(",");
+const corsOrigins = [
+  ...(process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5175").split(","),
+  ...(process.env.PLATFORM_ADMIN_ORIGIN || "").split(","),
+].map((origin) => origin.trim()).filter(Boolean);
 
 // Setup multer for file uploads
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -143,8 +147,10 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+app.use("/api/platform/login", rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false }));
 app.use("/api", apiLimiter);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/platform", platformRoutes);
 
 // Serve uploaded files
 app.use("/uploads", express.static(uploadsDir));

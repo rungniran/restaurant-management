@@ -193,7 +193,11 @@
         </article>
         <article class="faq-card">
           <h3>หากพบปัญหาในการใช้งาน ติดต่อที่ไหน?</h3>
-          <p>ติดต่อทีมงานผ่านเพจ Facebook QR ร้าน เรายินดีช่วยตรวจสอบและแนะนำวิธีแก้ไข</p>
+          <p>
+            ติดต่อทีมงานผ่าน
+            <a href="https://www.facebook.com/profile.php?id=61594743000410" target="_blank" rel="noopener noreferrer">เพจ Facebook QR ร้าน</a>
+            เรายินดีช่วยตรวจสอบและแนะนำวิธีแก้ไข
+          </p>
         </article>
       </div>
       <div class="closing-cta card">

@@ -7,8 +7,8 @@
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
     "seed": "node src/seed.js",
-    "build:customer": "cd ../frontend/customer && npm install && npm run build",
-    "build:staff": "cd ../frontend/staff && npm install && npm run build",
+    "build:customer": "cd ../frontend/customer && npm install --include=dev && npm run build",
+    "build:staff": "cd ../frontend/staff && npm install --include=dev && npm run build",
     "build:frontend": "npm run build:customer && npm run build:staff",
     "build": "npm run build:frontend",
     "serve": "npm run build:frontend && npm start"

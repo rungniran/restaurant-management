@@ -76,44 +76,46 @@
     <div v-if="payments.loading" class="empty">กำลังโหลด...</div>
     <div v-else-if="payments.payments.length === 0" class="empty">ไม่พบรายการชำระเงิน</div>
 
-    <table v-else class="pay-table">
-      <thead>
-        <tr>
-          <th>เลขที่ใบเสร็จ</th>
-          <th>โต๊ะ</th>
-          <th>วิธีชำระ</th>
-          <th>ประเภท</th>
-          <th>จำนวนเงิน</th>
-          <th>สลิป</th>
-          <th>สถานะ</th>
-          <th>วันที่</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in payments.payments" :key="p._id">
-          <td class="mono">{{ p.receiptNumber || "-" }}</td>
-          <td>{{ p.tableId?.tableNumber || "-" }}</td>
-          <td>{{ methodLabel(p.method) }}</td>
-          <td>{{ splitLabel(p) }}</td>
-          <td class="amount">฿{{ p.amount.toLocaleString() }}</td>
-          <td>
-            <button v-if="p.slipUrl" class="btn-slip-view" @click="activeSlip = p">
-              <i class="fa-solid fa-image"></i> ดูสลิป
-            </button>
-            <span v-else class="no-slip">-</span>
-          </td>
-          <td><span class="chip" :class="`chip-${p.status}`">{{ statusLabel(p.status) }}</span></td>
-          <td class="mono small-text">{{ formatDate(p.createdAt) }}</td>
-          <td class="row-actions">
-            <button v-if="p.status === 'pending'" class="btn small btn-accent" :disabled="payments.confirmingId === p._id" @click="confirmPayment(p)">
-              {{ payments.confirmingId === p._id ? "กำลังยืนยัน..." : "ยืนยันจ่ายแล้ว" }}
-            </button>
-            <a class="btn small" :href="`/receipt/${p._id}`" target="_blank" rel="noopener"><i class="fa-solid fa-receipt"></i> ใบเสร็จ</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="table-scroll" role="region" aria-label="ประวัติการชำระเงิน" tabindex="0">
+      <table class="pay-table">
+        <thead>
+          <tr>
+            <th>เลขที่ใบเสร็จ</th>
+            <th>โต๊ะ</th>
+            <th>วิธีชำระ</th>
+            <th>ประเภท</th>
+            <th>จำนวนเงิน</th>
+            <th>สลิป</th>
+            <th>สถานะ</th>
+            <th>วันที่</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in payments.payments" :key="p._id">
+            <td class="mono">{{ p.receiptNumber || "-" }}</td>
+            <td>{{ p.tableId?.tableNumber || "-" }}</td>
+            <td>{{ methodLabel(p.method) }}</td>
+            <td>{{ splitLabel(p) }}</td>
+            <td class="amount">฿{{ p.amount.toLocaleString() }}</td>
+            <td>
+              <button v-if="p.slipUrl" class="btn-slip-view" @click="activeSlip = p">
+                <i class="fa-solid fa-image"></i> ดูสลิป
+              </button>
+              <span v-else class="no-slip">-</span>
+            </td>
+            <td><span class="chip" :class="`chip-${p.status}`">{{ statusLabel(p.status) }}</span></td>
+            <td class="mono small-text">{{ formatDate(p.createdAt) }}</td>
+            <td class="row-actions">
+              <button v-if="p.status === 'pending'" class="btn small btn-accent" :disabled="payments.confirmingId === p._id" @click="confirmPayment(p)">
+                {{ payments.confirmingId === p._id ? "กำลังยืนยัน..." : "ยืนยันจ่ายแล้ว" }}
+              </button>
+              <a class="btn small" :href="`/receipt/${p._id}`" target="_blank" rel="noopener"><i class="fa-solid fa-receipt"></i> ใบเสร็จ</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Slip Viewer Modal -->
     <div v-if="activeSlip" class="modal-backdrop" @click.self="activeSlip = null">
@@ -266,6 +268,7 @@ h2 {
   display: flex;
   gap: 16px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 .summary-item {
   background: var(--panel);
@@ -291,9 +294,24 @@ h2 {
 }
 .error-text { color: var(--danger); margin: 0 0 14px; font-size: 13px; }
 .pay-table { display: table; }
+.table-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 @media (max-width: 800px) {
+  .manual-payment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .manual-payment-fields label,
+  .manual-payment-fields input,
+  .manual-payment-fields select { min-width: 0; width: 100%; }
+  .table-scroll { border: 1px solid var(--line); border-radius: 10px; }
   .pay-table { min-width: 780px; }
-  .page { overflow-x: auto; }
+  .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .filter-field, .filter-field input, .filter-field select { min-width: 0; width: 100%; }
+  .filters > .btn { min-height: 40px; }
+}
+@media (max-width: 480px) {
+  .manual-payment-fields, .filters { grid-template-columns: 1fr; }
+  .manual-payment-fields > .btn, .filters > .btn { width: 100%; }
+  .summary-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .summary-item { min-width: 0; padding: 10px 12px; }
+  .s-value { font-size: 18px; }
 }
 .pay-table {
   width: 100%;

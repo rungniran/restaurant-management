@@ -397,6 +397,8 @@ h2 {
 }
 
 .qr-canvas {
+  width: min(300px, 100%);
+  height: auto;
   border: 2px solid var(--line);
   border-radius: 8px;
 }
@@ -426,5 +428,16 @@ h2 {
 
 .btn.btn-info:hover {
   opacity: 0.9;
+}
+@media (max-width: 560px) {
+  .page-header { align-items: stretch; flex-direction: column; gap: 10px; }
+  .actions { display: grid; grid-template-columns: 1fr; }
+  .actions .btn { width: 100%; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); }
+  .modal-backdrop { padding: 12px; }
+  .modal { padding: 18px; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions .btn { flex: 1 1 auto; }
+  .qr-container { padding: 12px; }
 }
 </style>

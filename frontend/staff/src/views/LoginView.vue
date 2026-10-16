@@ -65,13 +65,15 @@ async function handleLogin() {
 <style scoped>
 .login-wrap {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at top, #1d2026 0%, #14161a 70%);
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 .login-card {
-  padding: 40px 36px;
+  padding: clamp(24px, 7vw, 40px) clamp(20px, 6vw, 36px);
   width: 100%;
   max-width: 420px;
   text-align: center;

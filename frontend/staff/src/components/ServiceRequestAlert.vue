@@ -222,4 +222,8 @@ function timeAgo(dateStr) {
 .slide-down-leave-active { transition: all 0.2s ease; }
 .slide-down-enter-from,
 .slide-down-leave-to { opacity: 0; transform: translateY(12px); }
+@media (max-width: 480px) {
+  .service-panel { right: 12px; bottom: 136px; width: calc(100vw - 24px); max-height: min(60dvh, 420px); }
+  .bell-fab { right: 14px; bottom: 18px; }
+}
 </style>

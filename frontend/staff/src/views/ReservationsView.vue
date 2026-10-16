@@ -245,4 +245,15 @@ h2 {
   gap: 8px;
   margin-top: 20px;
 }
+@media (max-width: 560px) {
+  .page-header { align-items: stretch; flex-direction: column; gap: 10px; }
+  .page-header .btn { width: 100%; }
+  .res-top { gap: 8px; }
+  .res-actions { display: grid; grid-template-columns: 1fr; }
+  .res-actions .btn { width: 100%; min-height: 40px; }
+  .modal-backdrop { padding: 12px; }
+  .modal { padding: 18px; max-height: calc(100dvh - 24px); }
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .modal-actions .btn:last-child { grid-column: 1 / -1; }
+}
 </style>

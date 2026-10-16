@@ -73,6 +73,7 @@ function logout() {
 .shell {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: #0e1117;
 }
 .sidebar {
@@ -151,26 +152,49 @@ nav {
 }
 .content {
   flex: 1;
+  min-width: 0;
   padding: 24px 28px;
   overflow-y: auto;
 }
 @media (max-width: 768px) {
-  .shell { display: block; }
+  .shell { display: block; min-height: 100dvh; }
   .sidebar {
     position: sticky;
     top: 0;
     width: 100%;
     height: auto;
-    padding: 10px 12px;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    overflow-x: auto;
+    padding: 8px 12px 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
-  .brand { margin: 0; padding: 0; font-size: 16px; white-space: nowrap; }
-  nav { flex: initial; flex-direction: row; gap: 4px; overflow-x: auto; }
-  .nav-item { padding: 8px 10px; white-space: nowrap; }
-  .sidebar-footer { display: none; }
-  .content { padding: 16px; overflow: visible; }
+  .brand { margin: 0; padding: 0 2px; font-size: 16px; white-space: nowrap; }
+  nav {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 4px 0 2px;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-item { flex: 0 0 auto; min-height: 42px; padding: 9px 11px; white-space: nowrap; }
+  .sidebar-footer { display: flex; align-items: center; gap: 8px; border: 0; padding: 0; min-width: 0; }
+  .who { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0; }
+  .logout-btn { width: auto; padding: 7px 10px; white-space: nowrap; }
+  .content { padding: 14px 12px 20px; overflow: visible; }
+}
+
+@media (max-width: 380px) {
+  .sidebar { padding-inline: 8px; }
+  .who { display: none; }
+  .nav-item { padding-inline: 9px; font-size: 12px; }
+  .content { padding-inline: 10px; }
 }
 </style>

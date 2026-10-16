@@ -554,9 +554,11 @@ select {
 .line-input-wrap {
   display: flex;
   gap: 8px;
+  min-width: 0;
 }
 .line-input-wrap input {
   flex: 1;
+  min-width: 0;
 }
 .btn-line {
   background: #00b900;
@@ -593,6 +595,25 @@ textarea {
   color: var(--muted);
   padding: 40px 0;
   text-align: center;
+}
+
+@media (max-width: 560px) {
+  .page { padding: 16px 0; }
+  .setup-header { align-items: stretch; flex-direction: column; gap: 12px; }
+  .header-actions { width: 100%; }
+  .header-actions .btn { flex: 1; }
+  .wizard-card { padding: 16px; }
+  .wizard-top { align-items: flex-start; }
+  .wizard-top h3 { font-size: 20px; }
+  .progress-box { flex-shrink: 0; }
+  .quick-grid, .form-grid { grid-template-columns: 1fr; }
+  .quick-grid .mini-action { text-align: left; }
+  .full-width { grid-column: auto; }
+  .line-input-wrap { flex-direction: column; }
+  .btn-line { min-height: 40px; justify-content: center; }
+  .wizard-actions { flex-direction: column-reverse; }
+  .wizard-actions .btn { width: 100%; }
+  .subscription-card { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 900px) {

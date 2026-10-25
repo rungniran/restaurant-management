@@ -28,8 +28,12 @@
       <div class="admin-stats">
         <article class="stat"><span>ร้านทั้งหมด</span><strong>{{ data.total ?? "—" }}</strong></article>
         <article class="stat"><span>สมัครวันนี้</span><strong>{{ data.today ?? "—" }}</strong></article>
-        <article class="stat"><span>แสดงล่าสุด</span><strong>{{ data.shown ?? "—" }}</strong></article>
+        <article class="stat"><span>บัญชีผู้ใช้พนักงาน</span><strong>{{ data.staffUsers ?? "—" }}</strong><small>รวมเจ้าของร้านและพนักงาน</small></article>
+        <article class="stat"><span>บัญชีที่เปิดใช้งาน</span><strong>{{ data.activeStaffUsers ?? "—" }}</strong></article>
+        <article class="stat"><span>ออเดอร์สะสม</span><strong>{{ data.orders ?? "—" }}</strong></article>
+        <article class="stat"><span>ออเดอร์วันนี้</span><strong>{{ data.ordersToday ?? "—" }}</strong></article>
       </div>
+      <p class="usage-note">ลูกค้าสั่งผ่าน QR โดยไม่ต้องสมัครบัญชี จึงแสดงจำนวนการใช้งานฝั่งลูกค้าผ่านจำนวนออเดอร์</p>
       <section class="signup-list">
         <div class="list-heading"><h2>รายชื่อร้าน</h2><button class="secondary" @click="loadSignups">รีเฟรช</button></div>
         <div v-if="loading" class="empty">กำลังโหลดข้อมูล...</div>
@@ -58,11 +62,11 @@
 import { onMounted, reactive, ref } from "vue";
 import axios from "axios";
 
-const apiOrigin = (import.meta.env.VITE_API_URL || "http://localhost:4000").replace(/\/$/, "");
+const apiOrigin = (import.meta.env.VITE_API_URL || window.location.origin).replace(/\/$/, "");
 const api = axios.create({ baseURL: `${apiOrigin}/api` });
 const token = ref(sessionStorage.getItem("platform_admin_token") || "");
 const credentials = reactive({ username: "", password: "" });
-const data = reactive({ total: null, today: null, shown: null, signups: [] });
+const data = reactive({ total: null, today: null, staffUsers: null, activeStaffUsers: null, orders: null, ordersToday: null, signups: [] });
 const loading = ref(false);
 const error = ref("");
 
@@ -92,7 +96,7 @@ async function loadSignups() {
 
 function logout() {
   token.value = ""; sessionStorage.removeItem("platform_admin_token");
-  Object.assign(data, { total: null, today: null, shown: null, signups: [] });
+  Object.assign(data, { total: null, today: null, staffUsers: null, activeStaffUsers: null, orders: null, ordersToday: null, signups: [] });
 }
 function dateLabel(value) { return value ? new Date(value).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "—"; }
 function statusLabel(value) { return ({ trial: "ทดลองใช้", active: "ใช้งาน", past_due: "ค้างชำระ", cancelled: "ยกเลิก" })[value] || "ทดลองใช้"; }

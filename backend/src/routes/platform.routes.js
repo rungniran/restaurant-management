@@ -3,6 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import Restaurant from "../models/Restaurant.js";
 import Staff from "../models/Staff.js";
+import Order from "../models/Order.js";
 import { requirePlatformAdmin } from "../middleware/platformAdmin.js";
 
 const router = Router();
@@ -32,12 +33,16 @@ router.get("/signups", requirePlatformAdmin, async (req, res) => {
   const bangkokNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
   bangkokNow.setUTCHours(0, 0, 0, 0);
   const bangkokMidnightUtc = new Date(bangkokNow.getTime() - 7 * 60 * 60 * 1000);
-  const [restaurants, total, today] = await Promise.all([
+  const [restaurants, total, today, staffUsers, activeStaffUsers, orders, ordersToday] = await Promise.all([
     Restaurant.find({}).sort({ createdAt: -1 }).limit(200)
       .select("name displayName phone address pricingMode subscriptionStatus trialEndsAt createdAt")
       .lean(),
     Restaurant.countDocuments(),
     Restaurant.countDocuments({ createdAt: { $gte: bangkokMidnightUtc } }),
+    Staff.countDocuments(),
+    Staff.countDocuments({ isActive: true }),
+    Order.countDocuments(),
+    Order.countDocuments({ createdAt: { $gte: bangkokMidnightUtc } }),
   ]);
 
   const restaurantIds = restaurants.map((restaurant) => restaurant._id);
@@ -50,6 +55,10 @@ router.get("/signups", requirePlatformAdmin, async (req, res) => {
     total,
     today,
     shown: restaurants.length,
+    staffUsers,
+    activeStaffUsers,
+    orders,
+    ordersToday,
     signups: restaurants.map((restaurant) => {
       const owner = ownersByRestaurant.get(String(restaurant._id));
       return {

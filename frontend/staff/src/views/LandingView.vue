@@ -13,6 +13,7 @@
       </div>
 
       <div class="top-actions">
+        <a class="btn btn-ghost" href="/platform-admin/">Platform Back office</a>
         <button class="btn btn-ghost" @click="router.push({ name: 'login' })">เข้าสู่ระบบ</button>
         <button class="btn btn-accent" @click="router.push({ name: 'sales-mode' })">เริ่มต้นร้าน</button>
       </div>

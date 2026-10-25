@@ -9,7 +9,8 @@
     "seed": "node src/seed.js",
     "build:customer": "cd ../frontend/customer && npm install --include=dev && npm run build",
     "build:staff": "cd ../frontend/staff && npm install --include=dev && npm run build",
-    "build:frontend": "npm run build:customer && npm run build:staff",
+    "build:platform-admin": "cd ../frontend/platform-admin && npm install --include=dev && npm run build -- --base=/platform-admin/ --outDir=../../backend/public/platform-admin",
+    "build:frontend": "npm run build:customer && npm run build:staff && npm run build:platform-admin",
     "build": "npm run build:frontend",
     "serve": "npm run build:frontend && npm start"
   },

@@ -217,14 +217,6 @@ app.get(/^\/staff(\/.*)?$/, (req, res, next) => {
   });
 });
 
-app.use("/platform-admin", express.static(path.join(publicDir, "platform-admin")));
-app.get(/^\/platform-admin(\/.*)?$/, (req, res, next) => {
-  const indexPath = path.join(publicDir, "platform-admin/index.html");
-  res.sendFile(indexPath, (err) => {
-    if (err) next();
-  });
-});
-
 app.use(express.static(path.join(publicDir, "customer")));
 app.get(/^\/(order|receipt)(\/.*)?$/, (req, res, next) => {
   const indexPath = path.join(publicDir, "customer/index.html");
